@@ -1,22 +1,82 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 
+class Guardian {
+  final String id;
+  final String name;
+  final String relation;
+  final String phonePrimary;
+  final String phoneSecondary;
+  final String address;
+  final String occupation;
+  final String notes;
+
+  Guardian({
+    required this.id,
+    required this.name,
+    this.relation = 'أب',
+    this.phonePrimary = '',
+    this.phoneSecondary = '',
+    this.address = '',
+    this.occupation = '',
+    this.notes = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'relation': relation,
+        'phonePrimary': phonePrimary,
+        'phoneSecondary': phoneSecondary,
+        'address': address,
+        'occupation': occupation,
+        'notes': notes,
+      };
+
+  factory Guardian.fromJson(Map<String, dynamic> j) => Guardian(
+        id: j['id'] ?? '',
+        name: j['name'] ?? '',
+        relation: j['relation'] ?? 'أب',
+        phonePrimary: j['phonePrimary'] ?? '',
+        phoneSecondary: j['phoneSecondary'] ?? '',
+        address: j['address'] ?? '',
+        occupation: j['occupation'] ?? '',
+        notes: j['notes'] ?? '',
+      );
+}
+
 class Teacher {
   final String name;
-  final String subject;
+  final String degree;
+  final String certificate;
+  final String phone;
+  final List<String> subjects;
   final String? photoPath;
-  Teacher({required this.name, required this.subject, this.photoPath});
 
-  String get display => '$subject - $name';
+  Teacher({
+    required this.name,
+    this.degree = '',
+    this.certificate = '',
+    this.phone = '',
+    this.subjects = const [],
+    this.photoPath,
+  });
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'subject': subject,
+        'degree': degree,
+        'certificate': certificate,
+        'phone': phone,
+        'subjects': subjects,
         'photoPath': photoPath,
       };
+
   factory Teacher.fromJson(Map<String, dynamic> j) => Teacher(
-        name: j['name'],
-        subject: j['subject'],
+        name: j['name'] ?? '',
+        degree: j['degree'] ?? '',
+        certificate: j['certificate'] ?? '',
+        phone: j['phone'] ?? '',
+        subjects: List<String>.from(j['subjects'] ?? []),
         photoPath: j['photoPath'],
       );
 }
@@ -24,17 +84,39 @@ class Teacher {
 class Student {
   final String name;
   final String classRoom;
+  final String age;
+  final String gender;
+  final String seatNumber;
+  final String? guardianId;
   final String? photoPath;
-  Student({required this.name, required this.classRoom, this.photoPath});
+
+  Student({
+    required this.name,
+    required this.classRoom,
+    this.age = '',
+    this.gender = 'ذكر',
+    this.seatNumber = '',
+    this.guardianId,
+    this.photoPath,
+  });
 
   Map<String, dynamic> toJson() => {
         'name': name,
         'classRoom': classRoom,
+        'age': age,
+        'gender': gender,
+        'seatNumber': seatNumber,
+        'guardianId': guardianId,
         'photoPath': photoPath,
       };
+
   factory Student.fromJson(Map<String, dynamic> j) => Student(
-        name: j['name'],
-        classRoom: j['classRoom'],
+        name: j['name'] ?? '',
+        classRoom: j['classRoom'] ?? '',
+        age: j['age'] ?? '',
+        gender: j['gender'] ?? 'ذكر',
+        seatNumber: j['seatNumber'] ?? '',
+        guardianId: j['guardianId'],
         photoPath: j['photoPath'],
       );
 }
@@ -52,6 +134,10 @@ class SchoolDataProvider extends ChangeNotifier {
 
   List<Teacher> teachers = [];
   List<Student> students = [];
+  List<Guardian> guardians = [];
+
+  /// رسوم افتراضية لكل فصل
+  Map<String, double> feesByClass = {};
 
   Map<String, Map<String, Map<String, String>>> schedule = {};
   Map<String, List<String>> subjectsByClass = {};
@@ -66,6 +152,7 @@ class SchoolDataProvider extends ChangeNotifier {
     "الخامسة", "السادسة", "السابعة", "الثامنة",
   ];
 
+  // ============ التحميل والحفظ ============
   Future<void> loadData() async {
     final data = await StorageService.load();
     if (data != null) {
@@ -79,6 +166,13 @@ class SchoolDataProvider extends ChangeNotifier {
       students = (data['students'] as List? ?? [])
           .map((e) => Student.fromJson(e))
           .toList();
+      guardians = (data['guardians'] as List? ?? [])
+          .map((e) => Guardian.fromJson(e))
+          .toList();
+      feesByClass = (data['feesByClass'] as Map?)?.map(
+            (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+          ) ??
+          {};
       subjectsByClass = (data['subjectsByClass'] as Map?)?.map(
             (k, v) => MapEntry(k.toString(), List<String>.from(v)),
           ) ??
@@ -114,8 +208,8 @@ class SchoolDataProvider extends ChangeNotifier {
     }
     if (teachers.isEmpty) {
       teachers = [
-        Teacher(name: "أ. محمد", subject: "رياضيات"),
-        Teacher(name: "أ. أحمد", subject: "لغة عربية"),
+        Teacher(name: "أ. محمد", subjects: ["رياضيات"]),
+        Teacher(name: "أ. أحمد", subjects: ["لغة عربية"]),
       ];
     }
     notifyListeners();
@@ -129,6 +223,8 @@ class SchoolDataProvider extends ChangeNotifier {
       'classes': classes,
       'teachers': teachers.map((t) => t.toJson()).toList(),
       'students': students.map((s) => s.toJson()).toList(),
+      'guardians': guardians.map((g) => g.toJson()).toList(),
+      'feesByClass': feesByClass,
       'subjectsByClass': subjectsByClass,
       'schedule': schedule,
       'grades': grades,
@@ -159,6 +255,7 @@ class SchoolDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============ الجدول ============
   void assignLesson({
     required String cls,
     required String day,
@@ -182,13 +279,13 @@ class SchoolDataProvider extends ChangeNotifier {
     return schedule[cls]?[day]?[lesson] ?? '-';
   }
 
-  Map<String, String> getTeacherDaySchedule(String teacherDisplay, String day) {
+  Map<String, String> getTeacherDaySchedule(String teacherName, String day) {
     final result = <String, String>{};
     for (final cls in classes) {
       final lessonsMap = schedule[cls]?[day];
       if (lessonsMap == null) continue;
       lessonsMap.forEach((lesson, value) {
-        if (value == teacherDisplay) {
+        if (value.contains(teacherName)) {
           result[lesson] = cls;
         }
       });
@@ -196,15 +293,15 @@ class SchoolDataProvider extends ChangeNotifier {
     return result;
   }
 
-  void addTeacher(String name, String subject, {String? photoPath}) {
-    teachers.add(Teacher(name: name, subject: subject, photoPath: photoPath));
+  // ============ المعلمون ============
+  void addTeacher(Teacher t) {
+    teachers.add(t);
     saveData();
     notifyListeners();
   }
 
-  void updateTeacherPhoto(int index, String? path) {
-    final t = teachers[index];
-    teachers[index] = Teacher(name: t.name, subject: t.subject, photoPath: path);
+  void updateTeacher(int index, Teacher t) {
+    teachers[index] = t;
     saveData();
     notifyListeners();
   }
@@ -215,16 +312,19 @@ class SchoolDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addStudent(String name, String cls, {String? photoPath}) {
-    students.add(Student(name: name, classRoom: cls, photoPath: photoPath));
+  List<Teacher> teachersForSubject(String subject) {
+    return teachers.where((t) => t.subjects.contains(subject)).toList();
+  }
+
+  // ============ الطلاب ============
+  void addStudent(Student s) {
+    students.add(s);
     saveData();
     notifyListeners();
   }
 
-  void updateStudentPhoto(int index, String? path) {
-    final s = students[index];
-    students[index] =
-        Student(name: s.name, classRoom: s.classRoom, photoPath: path);
+  void updateStudent(int index, Student s) {
+    students[index] = s;
     saveData();
     notifyListeners();
   }
@@ -238,6 +338,39 @@ class SchoolDataProvider extends ChangeNotifier {
   List<Student> studentsOf(String cls) =>
       students.where((s) => s.classRoom == cls).toList();
 
+  // ============ أولياء الأمور ============
+  void addGuardian(Guardian g) {
+    guardians.add(g);
+    saveData();
+    notifyListeners();
+  }
+
+  void updateGuardian(int index, Guardian g) {
+    guardians[index] = g;
+    saveData();
+    notifyListeners();
+  }
+
+  void removeGuardian(int i) {
+    guardians.removeAt(i);
+    saveData();
+    notifyListeners();
+  }
+
+  Guardian? guardianById(String? id) {
+    if (id == null) return null;
+    try {
+      return guardians.firstWhere((g) => g.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Student> studentsOfGuardian(String guardianId) {
+    return students.where((s) => s.guardianId == guardianId).toList();
+  }
+
+  // ============ المواد ============
   List<String> subjectsOf(String cls) => subjectsByClass[cls] ?? [];
 
   void addSubject(String cls, String subj) {
@@ -255,6 +388,7 @@ class SchoolDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ============ الدرجات ============
   double? getGrade(String cls, String student, String subj) =>
       grades[cls]?[student]?[subj];
 
@@ -262,6 +396,15 @@ class SchoolDataProvider extends ChangeNotifier {
     grades.putIfAbsent(cls, () => {});
     grades[cls]!.putIfAbsent(student, () => {});
     grades[cls]![student]![subj] = value;
+    saveData();
+    notifyListeners();
+  }
+
+  // ============ رسوم الفصول ============
+  double feeOfClass(String cls) => feesByClass[cls] ?? 0;
+
+  void setClassFee(String cls, double amount) {
+    feesByClass[cls] = amount;
     saveData();
     notifyListeners();
   }
