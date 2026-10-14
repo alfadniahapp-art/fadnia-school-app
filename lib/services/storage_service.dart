@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
-  static const _keyData = 'mulla_school_data_v3';
-  static const _keySettings = 'mulla_settings_v2';
-  static const _keyAttendance = 'mulla_attendance_v2';
-  static const _keyCalendar = 'mulla_calendar_v1';
-  static const _keyFees = 'mulla_fees_v1';
+  static const _keyData = 'mulla_school_data_v4';
+  static const _keySettings = 'mulla_settings_v3';
+  static const _keyAttendance = 'mulla_attendance_v3';
+  static const _keyCalendar = 'mulla_calendar_v2';
+  static const _keyFees = 'mulla_fees_v2';
 
+  // ============ البيانات الرئيسية ============
   static Future<void> save(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyData, jsonEncode(data));
@@ -24,6 +25,7 @@ class StorageService {
     }
   }
 
+  // ============ الإعدادات ============
   static Future<void> saveSettings(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keySettings, jsonEncode(data));
@@ -40,6 +42,7 @@ class StorageService {
     }
   }
 
+  // ============ الغياب ============
   static Future<void> saveAttendance(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyAttendance, jsonEncode(data));
@@ -56,6 +59,7 @@ class StorageService {
     }
   }
 
+  // ============ التقويم ============
   static Future<void> saveCalendar(List<Map<String, dynamic>> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyCalendar, jsonEncode(data));
@@ -74,6 +78,7 @@ class StorageService {
     }
   }
 
+  // ============ الرسوم ============
   static Future<void> saveFees(List<Map<String, dynamic>> data) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyFees, jsonEncode(data));
@@ -92,6 +97,7 @@ class StorageService {
     }
   }
 
+  // ============ النسخ الاحتياطي ============
   static Future<String> exportAll() async {
     final prefs = await SharedPreferences.getInstance();
     return jsonEncode({
@@ -101,6 +107,7 @@ class StorageService {
       'calendar': prefs.getString(_keyCalendar),
       'fees': prefs.getString(_keyFees),
       'exportedAt': DateTime.now().toIso8601String(),
+      'version': 4,
     });
   }
 
@@ -109,13 +116,18 @@ class StorageService {
       final map = jsonDecode(json) as Map<String, dynamic>;
       final prefs = await SharedPreferences.getInstance();
       if (map['data'] != null) await prefs.setString(_keyData, map['data']);
-      if (map['settings'] != null)
+      if (map['settings'] != null) {
         await prefs.setString(_keySettings, map['settings']);
-      if (map['attendance'] != null)
+      }
+      if (map['attendance'] != null) {
         await prefs.setString(_keyAttendance, map['attendance']);
-      if (map['calendar'] != null)
+      }
+      if (map['calendar'] != null) {
         await prefs.setString(_keyCalendar, map['calendar']);
-      if (map['fees'] != null) await prefs.setString(_keyFees, map['fees']);
+      }
+      if (map['fees'] != null) {
+        await prefs.setString(_keyFees, map['fees']);
+      }
       return true;
     } catch (_) {
       return false;
