@@ -4,11 +4,18 @@ import 'package:printing/printing.dart';
 import '../models/school_data.dart';
 
 class PdfService {
+  /// جدول الحصص — يدعم الاتجاه الرأسي والأفقي
   static Future<void> printSchedule(
-      SchoolDataProvider data, String cls) async {
+    SchoolDataProvider data,
+    String cls, {
+    bool isLandscape = false,
+  }) async {
     final doc = pw.Document();
+
     doc.addPage(pw.MultiPage(
-      pageFormat: PdfPageFormat.a4.landscape,
+      pageFormat: isLandscape
+          ? PdfPageFormat.a4.landscape
+          : PdfPageFormat.a4.portrait,
       textDirection: pw.TextDirection.rtl,
       build: (ctx) => [
         pw.Header(
@@ -32,11 +39,14 @@ class PdfService {
         pw.Table.fromTextArray(
           headers: ['اليوم', ...data.lessons],
           data: data.days
-              .map((d) => [d, ...data.lessons.map((l) => data.getLesson(cls, d, l))])
+              .map((d) => [
+                    d,
+                    ...data.lessons.map((l) => data.getLesson(cls, d, l)),
+                  ])
               .toList(),
           headerStyle: pw.TextStyle(
               fontWeight: pw.FontWeight.bold, fontSize: 11),
-          cellStyle: const pw.TextStyle(fontSize: 10),
+          cellStyle: const pw.TextStyle(fontSize: 9),
           headerDecoration:
               const pw.BoxDecoration(color: PdfColors.grey300),
           cellAlignment: pw.Alignment.center,
@@ -46,9 +56,11 @@ class PdfService {
         ),
       ],
     ));
+
     await Printing.layoutPdf(onLayout: (f) => doc.save());
   }
 
+  /// كشف الدرجات
   static Future<void> printGrades(
       SchoolDataProvider data, String cls) async {
     final doc = pw.Document();
@@ -106,6 +118,7 @@ class PdfService {
     await Printing.layoutPdf(onLayout: (f) => doc.save());
   }
 
+  /// شهادة تقدير
   static Future<void> printCertificate(
     SchoolDataProvider data,
     String cls,
@@ -188,6 +201,7 @@ class PdfService {
     await Printing.layoutPdf(onLayout: (f) => doc.save());
   }
 
+  /// تقرير الغياب
   static Future<void> printAttendanceReport(
     SchoolDataProvider data,
     Map<String, Map<String, Map<String, String>>> attendance,
@@ -240,6 +254,7 @@ class PdfService {
     await Printing.layoutPdf(onLayout: (f) => doc.save());
   }
 
+  /// تقرير عام عن المدرسة
   static Future<void> printSchoolReport(SchoolDataProvider data) async {
     final doc = pw.Document();
 
@@ -269,15 +284,19 @@ class PdfService {
         pw.Bullet(text: 'عدد الفصول: ${data.classes.length}'),
         pw.Bullet(text: 'عدد المعلمين: ${data.teachers.length}'),
         pw.Bullet(text: 'عدد الطلاب: ${data.students.length}'),
+        pw.Bullet(text: 'عدد أولياء الأمور: ${data.guardians.length}'),
         pw.SizedBox(height: 20),
         pw.Header(level: 1, text: 'قائمة المعلمين'),
         pw.Table.fromTextArray(
-          headers: ['م', 'الاسم', 'المادة'],
+          headers: ['م', 'الاسم', 'الدرجة', 'الشهادة', 'الهاتف'],
           data: List.generate(data.teachers.length, (i) {
+            final t = data.teachers[i];
             return [
               '${i + 1}',
-              data.teachers[i].name,
-              data.teachers[i].subject,
+              t.name,
+              t.degree.isEmpty ? '-' : t.degree,
+              t.certificate.isEmpty ? '-' : t.certificate,
+              t.phone.isEmpty ? '-' : t.phone,
             ];
           }),
           headerDecoration:
