@@ -30,11 +30,9 @@ jobs:
           cd /tmp
           flutter create --org com.example --project-name fadnia_school_app temp_app
 
-          # نسخ مجلد android كاملاً
           rm -rf $GITHUB_WORKSPACE/android
           cp -r /tmp/temp_app/android $GITHUB_WORKSPACE/android
 
-          # تعديل settings.gradle لإصدار AGP و Kotlin المطلوب
           cat > $GITHUB_WORKSPACE/android/settings.gradle << 'EOF'
           pluginManagement {
               def flutterSdkPath = {
@@ -63,7 +61,6 @@ jobs:
           include ":app"
           EOF
 
-          # تعديل build.gradle في الجذر
           cat > $GITHUB_WORKSPACE/android/build.gradle << 'EOF'
           allprojects {
               repositories {
@@ -85,7 +82,6 @@ jobs:
           }
           EOF
 
-          # ضمان وجود MainActivity
           mkdir -p $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app
           cat > $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt << 'EOF'
           package com.example.fadnia_school_app
@@ -93,6 +89,16 @@ jobs:
           import io.flutter.embedding.android.FlutterActivity
 
           class MainActivity: FlutterActivity()
+          EOF
+
+      - name: Update Gradle wrapper to 8.0
+        run: |
+          cat > $GITHUB_WORKSPACE/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
           EOF
 
       - name: Flutter doctor
