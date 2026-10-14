@@ -30,24 +30,70 @@ jobs:
           cd /tmp
           flutter create --org com.example --project-name fadnia_school_app temp_app
 
-          # نسخ مجلد android كاملاً واستبدال الموجود
+          # نسخ مجلد android كاملاً
           rm -rf $GITHUB_WORKSPACE/android
           cp -r /tmp/temp_app/android $GITHUB_WORKSPACE/android
 
-          # إعادة اسم الحزمة الأصلية
-          find $GITHUB_WORKSPACE/android -type f \( -name "*.gradle" -o -name "*.kts" -o -name "AndroidManifest.xml" -o -name "*.kt" \) -exec sed -i 's/com\.example\.fadnia_school_app/com.example.fadnia_school_app/g' {} +
+          # تعديل settings.gradle لإصدار AGP و Kotlin المطلوب
+          cat > $GITHUB_WORKSPACE/android/settings.gradle << 'EOF'
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  file("local.properties").withInputStream { properties.load(it) }
+                  def flutterSdkPath = properties.getProperty("flutter.sdk")
+                  assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+                  return flutterSdkPath
+              }()
 
-          # تأكد من أن MainActivity موجودة
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          plugins {
+              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+              id "com.android.application" version "8.1.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.10" apply false
+          }
+
+          include ":app"
+          EOF
+
+          # تعديل build.gradle في الجذر
+          cat > $GITHUB_WORKSPACE/android/build.gradle << 'EOF'
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.buildDir = "../build"
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+          }
+          subprojects {
+              project.evaluationDependsOn(":app")
+          }
+
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+          # ضمان وجود MainActivity
           mkdir -p $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app
-          if [ ! -f "$GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt" ]; then
-            cat > $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt << 'EOF'
+          cat > $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt << 'EOF'
           package com.example.fadnia_school_app
 
           import io.flutter.embedding.android.FlutterActivity
 
           class MainActivity: FlutterActivity()
           EOF
-          fi
 
       - name: Flutter doctor
         run: flutter doctor -v
