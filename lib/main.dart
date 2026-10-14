@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'models/school_data.dart';
@@ -30,22 +29,40 @@ class MullaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SchoolDataProvider()..loadData()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()..load()),
-        ChangeNotifierProvider(create: (_) => AttendanceProvider()..load()),
-        ChangeNotifierProvider(create: (_) => CalendarProvider()..load()),
-        ChangeNotifierProvider(create: (_) => FeesProvider()..load()),
+        ChangeNotifierProvider(
+            create: (_) => SchoolDataProvider()..loadData()),
+        ChangeNotifierProvider(
+            create: (_) => SettingsProvider()..load()),
+        ChangeNotifierProvider(
+            create: (_) => AttendanceProvider()..load()),
+        ChangeNotifierProvider(
+            create: (_) => CalendarProvider()..load()),
+        ChangeNotifierProvider(
+            create: (_) => FeesProvider()..load()),
       ],
-      child: MaterialApp(
-        title: 'مدارس الفادنية شرق',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        locale: const Locale('ar'),
-        builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        ),
-        home: const SplashScreen(),
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          // 🔄 تحديث الألوان من الإعدادات
+          AppTheme.updateColors(
+            primary: settings.primaryColor,
+            background: settings.backgroundColor,
+          );
+
+          return MaterialApp(
+            title: 'مدارس الفادنية شرق',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.buildTheme(
+              primary: settings.primaryColor,
+              background: settings.backgroundColor,
+            ),
+            locale: const Locale('ar'),
+            builder: (context, child) => Directionality(
+              textDirection: TextDirection.rtl,
+              child: child!,
+            ),
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }
