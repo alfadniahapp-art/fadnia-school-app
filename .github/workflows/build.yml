@@ -25,19 +25,29 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate missing Flutter Android files
+      - name: Generate full Flutter Android project
         run: |
           cd /tmp
           flutter create --org com.example --project-name fadnia_school_app temp_app
-          cp -rn /tmp/temp_app/android/gradle /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
-          cp -n /tmp/temp_app/android/gradlew /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
-          cp -n /tmp/temp_app/android/gradlew.bat /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
-          cp -rn /tmp/temp_app/android/gradle /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
-          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/values
-          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/mipmap-hdpi
-          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/kotlin/com/example/fadnia_school_app
-          cp -n /tmp/temp_app/android/app/src/main/res/values/styles.xml /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/values/ || true
-          cp -rn /tmp/temp_app/android/app/src/main/res/mipmap-hdpi/* /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/mipmap-hdpi/ || true
+
+          # نسخ مجلد android كاملاً واستبدال الموجود
+          rm -rf $GITHUB_WORKSPACE/android
+          cp -r /tmp/temp_app/android $GITHUB_WORKSPACE/android
+
+          # إعادة اسم الحزمة الأصلية
+          find $GITHUB_WORKSPACE/android -type f \( -name "*.gradle" -o -name "*.kts" -o -name "AndroidManifest.xml" -o -name "*.kt" \) -exec sed -i 's/com\.example\.fadnia_school_app/com.example.fadnia_school_app/g' {} +
+
+          # تأكد من أن MainActivity موجودة
+          mkdir -p $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app
+          if [ ! -f "$GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt" ]; then
+            cat > $GITHUB_WORKSPACE/android/app/src/main/kotlin/com/example/fadnia_school_app/MainActivity.kt << 'EOF'
+          package com.example.fadnia_school_app
+
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity: FlutterActivity()
+          EOF
+          fi
 
       - name: Flutter doctor
         run: flutter doctor -v
