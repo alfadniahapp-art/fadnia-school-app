@@ -25,6 +25,20 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Generate missing Flutter Android files
+        run: |
+          cd /tmp
+          flutter create --org com.example --project-name fadnia_school_app temp_app
+          cp -rn /tmp/temp_app/android/gradle /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
+          cp -n /tmp/temp_app/android/gradlew /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
+          cp -n /tmp/temp_app/android/gradlew.bat /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
+          cp -rn /tmp/temp_app/android/gradle /home/runner/work/fadnia-school-app/fadnia-school-app/android/ || true
+          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/values
+          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/mipmap-hdpi
+          mkdir -p /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/kotlin/com/example/fadnia_school_app
+          cp -n /tmp/temp_app/android/app/src/main/res/values/styles.xml /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/values/ || true
+          cp -rn /tmp/temp_app/android/app/src/main/res/mipmap-hdpi/* /home/runner/work/fadnia-school-app/fadnia-school-app/android/app/src/main/res/mipmap-hdpi/ || true
+
       - name: Flutter doctor
         run: flutter doctor -v
 
