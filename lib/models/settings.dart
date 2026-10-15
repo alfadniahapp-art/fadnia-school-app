@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../utils/date_formatter.dart';
 
 class SettingsProvider extends ChangeNotifier {
   String password = "1234";
@@ -12,18 +13,23 @@ class SettingsProvider extends ChangeNotifier {
   String currencySymbol = "ج.س";
 
   // 🎨 الألوان
-  int primaryColorValue = 0xFFF1C40F;    // ذهبي
-  int backgroundColorValue = 0xFF0B132B; // كحلي
+  int primaryColorValue = 0xFFF1C40F;
+  int backgroundColorValue = 0xFF0B132B;
 
   // 🏫 القالب
-  String schoolTemplate = "كبيرة"; // صغيرة / متوسطة / كبيرة
+  String schoolTemplate = "كبيرة";
 
-  // 📅 أيام العمل في الشهر
+  // 📅 أيام العمل
   int workDaysPerMonth = 22;
+
+  // 🗓️ نوع التقويم
+  String calendarTypeKey = 'both'; // hijri / gregorian / both
+
+  CalendarType get calendarType =>
+      CalendarTypeExt.fromKey(calendarTypeKey);
 
   // 📦 الوحدات المفعّلة
   Map<String, bool> enabledModules = {
-    // أكاديمي
     'schedule': true,
     'teachers': true,
     'subjects': true,
@@ -31,16 +37,15 @@ class SettingsProvider extends ChangeNotifier {
     'guardians': true,
     'grades': true,
     'attendance': true,
-    'calendar': false,
+    'calendar': true,
     'fees': true,
     'certificates': true,
     'reports': true,
     'stats': true,
     'teacherDaily': true,
-    // 💰 مالية
-    'employees': true,      // الموظفون
-    'payroll': true,        // الرواتب
-    'finance': false,       // الخزينة العامة (سيُبنى لاحقاً)
+    'employees': true,
+    'payroll': true,
+    'finance': true,
   };
 
   Color get primaryColor => Color(primaryColorValue);
@@ -61,10 +66,10 @@ class SettingsProvider extends ChangeNotifier {
           data['backgroundColorValue'] ?? backgroundColorValue;
       schoolTemplate = data['schoolTemplate'] ?? schoolTemplate;
       workDaysPerMonth = data['workDaysPerMonth'] ?? workDaysPerMonth;
+      calendarTypeKey = data['calendarTypeKey'] ?? calendarTypeKey;
       final mods = data['enabledModules'];
       if (mods != null) {
         final loaded = Map<String, bool>.from(mods);
-        // دمج: إذا كانت هناك مفاتيح جديدة غير موجودة، نضيفها بقيمها الافتراضية
         for (final key in enabledModules.keys) {
           if (!loaded.containsKey(key)) {
             loaded[key] = enabledModules[key]!;
@@ -89,6 +94,7 @@ class SettingsProvider extends ChangeNotifier {
       'backgroundColorValue': backgroundColorValue,
       'schoolTemplate': schoolTemplate,
       'workDaysPerMonth': workDaysPerMonth,
+      'calendarTypeKey': calendarTypeKey,
       'enabledModules': enabledModules,
     });
     notifyListeners();
@@ -140,6 +146,11 @@ class SettingsProvider extends ChangeNotifier {
     save();
   }
 
+  void setCalendarType(CalendarType type) {
+    calendarTypeKey = type.key;
+    save();
+  }
+
   void setTemplate(String t) {
     schoolTemplate = t;
     applyTemplate(t);
@@ -187,7 +198,6 @@ class SettingsProvider extends ChangeNotifier {
         'finance': false,
       };
     } else {
-      // كبيرة
       enabledModules = {
         'schedule': true,
         'teachers': true,
