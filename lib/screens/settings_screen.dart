@@ -63,7 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(controller: _yearCtrl),
               const CustomLabel("الفصل الدراسي:"),
               TextField(controller: _semCtrl),
-              const CustomLabel("أيام العمل في الشهر (للرواتب):"),
+              const CustomLabel("أيام العمل في الشهر:"),
               TextField(
                 controller: _workDaysCtrl,
                 keyboardType: TextInputType.number,
@@ -106,7 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _snack(context, "تم تغيير العملة");
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: s.primaryColor.withOpacity(0.15),
+                      backgroundColor:
+                          s.primaryColor.withOpacity(0.15),
                       side: BorderSide(color: s.primaryColor, width: 2),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 16),
@@ -291,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 30),
-              const Text("الإصدار 5.0.0",
+              const Text("الإصدار 6.0.0",
                   style: TextStyle(
                       color: Colors.white38,
                       fontFamily: 'Changa',
@@ -354,7 +355,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: selected ? 4 : 0,
           ),
           boxShadow: selected
-              ? [BoxShadow(color: color.withOpacity(0.7), blurRadius: 12)]
+              ? [
+                  BoxShadow(
+                      color: color.withOpacity(0.7), blurRadius: 12)
+                ]
               : null,
         ),
         child: selected
@@ -425,7 +429,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(template,
                       style: TextStyle(
-                          color: selected ? s.primaryColor : Colors.white,
+                          color:
+                              selected ? s.primaryColor : Colors.white,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Changa')),
                   Text(desc,
