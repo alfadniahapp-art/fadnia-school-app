@@ -22,6 +22,7 @@ import 'teacher_daily_screen.dart';
 import 'employees_screen.dart';
 import 'payroll_screen.dart';
 import 'finance_screen.dart';
+import 'themes_screen.dart';
 import 'about_screen.dart';
 import 'login_screen.dart';
 
@@ -42,63 +43,14 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 // ============ الترويسة ============
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.info_outline,
-                          color: settings.primaryColor),
-                      tooltip: "حول التطبيق",
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AboutScreen()),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Text(data.name, style: AppTheme.titleStyle),
-                          Text(
-                            "المرحلة ${data.stage} - ${data.type}",
-                            style: AppTheme.subtitleStyle,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${settings.academicYear} | ${settings.semester}",
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                              fontFamily: 'Changa',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.settings,
-                          color: settings.primaryColor),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SettingsScreen()),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // ============ ملخص مالي سريع ============
-                if (settings.isEnabled('finance')) ...[
-                  const SizedBox(height: 15),
-                  _financeSummaryCard(context, data, settings),
-                ],
-
+                _header(context, data, settings),
                 const SizedBox(height: 20),
 
                 // ============ الأزرار ============
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 500),
                   child: Column(
-                    children: _buildButtons(context, settings),
+                    children: _buildAllSections(context, settings),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -110,167 +62,138 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _financeSummaryCard(BuildContext context, SchoolDataProvider data,
+  Widget _header(BuildContext context, SchoolDataProvider data,
       SettingsProvider settings) {
     final primary = settings.primaryColor;
-    final currency = settings.currencySymbol;
-    final balance = data.totalBalance;
-    final income = data.totalIncome;
-    final expense = data.totalExpense;
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const FinanceScreen()),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              primary.withOpacity(0.25),
-              primary.withOpacity(0.05),
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(Icons.info_outline, color: primary),
+          tooltip: "حول التطبيق",
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AboutScreen()),
+          ),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Text(data.name, style: AppTheme.titleStyle),
+              Text(
+                "المرحلة ${data.stage} - ${data.type}",
+                style: AppTheme.subtitleStyle,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "${settings.academicYear} | ${settings.semester}",
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontFamily: 'Changa',
+                ),
+              ),
             ],
           ),
-          border: Border.all(color: primary, width: 2),
-          borderRadius: BorderRadius.circular(14),
         ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(Icons.account_balance_wallet,
-                    color: primary, size: 22),
-                const SizedBox(width: 8),
-                Text("💰 الخزينة العامة",
-                    style: TextStyle(
-                        color: primary,
-                        fontFamily: 'Changa',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
-                const Spacer(),
-                Icon(Icons.arrow_forward_ios,
-                    color: primary, size: 14),
-              ],
-            ),
-            const SizedBox(height: 8),
-            FittedBox(
-              child: Text(
-                "${balance.toStringAsFixed(0)} $currency",
-                style: TextStyle(
-                    color: primary,
-                    fontFamily: 'Changa',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text("📥 ${income.toStringAsFixed(0)}",
-                    style: const TextStyle(
-                        color: AppColors.green,
-                        fontFamily: 'Changa',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
-                Text("📤 ${expense.toStringAsFixed(0)}",
-                    style: const TextStyle(
-                        color: AppColors.red,
-                        fontFamily: 'Changa',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12)),
-              ],
-            ),
-          ],
+        IconButton(
+          icon: Icon(Icons.settings, color: primary),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  List<Widget> _buildButtons(
+  List<Widget> _buildAllSections(
       BuildContext context, SettingsProvider settings) {
-    final buttons = <Widget>[];
+    final all = <Widget>[];
 
-    void addRow(Widget? a, Widget? b) {
-      if (a == null && b == null) return;
-      if (a != null && b != null) {
-        buttons.add(Row(children: [a, const SizedBox(width: 12), b]));
-      } else {
-        buttons.add(Row(children: [a ?? b!]));
+    // ============ 🏫 القسم الأكاديمي ============
+    final academic = <Widget>[
+      _btn(context, settings, 'schedule', 'جدول الحصص',
+          Icons.calendar_month, const ScheduleScreen()),
+      _btn(context, settings, 'teachers', 'المعلمون',
+          Icons.person, const TeachersScreen()),
+      _btn(context, settings, 'subjects', 'المواد',
+          Icons.book, const SubjectsScreen()),
+      _btn(context, settings, 'students', 'الطلاب',
+          Icons.school, const StudentsScreen()),
+      _btn(context, settings, 'guardians', 'أولياء الأمور',
+          Icons.family_restroom, const GuardiansScreen()),
+      _btn(context, settings, 'grades', 'الدرجات',
+          Icons.grade, const GradesScreen()),
+      _btn(context, settings, 'attendance', 'الغياب',
+          Icons.event_busy, const AttendanceScreen()),
+      _btn(context, settings, 'calendar', 'التقويم',
+          Icons.calendar_today, const CalendarScreen()),
+      _btn(context, settings, 'teacherDaily', 'جدول المعلم',
+          Icons.person_pin_circle, const TeacherDailyScreen()),
+    ].whereType<Widget>().toList();
+
+    if (academic.isNotEmpty) {
+      all.add(_sectionTitle('🏫 الأكاديمي', settings.primaryColor));
+      all.addAll(_pairRows(academic));
+      all.add(const SizedBox(height: 12));
+    }
+
+    // ============ 📊 قسم التقارير ============
+    final reports = <Widget>[
+      _btn(context, settings, 'certificates', 'الشهادات',
+          Icons.card_membership, const CertificatesScreen()),
+      _btn(context, settings, 'reports', 'التقارير',
+          Icons.assessment, const ReportsScreen()),
+      _btn(context, settings, 'stats', 'الإحصائيات',
+          Icons.bar_chart, const StatsScreen()),
+    ].whereType<Widget>().toList();
+
+    if (reports.isNotEmpty) {
+      all.add(_sectionTitle('📊 التقارير', settings.primaryColor));
+      all.addAll(_pairRows(reports));
+      all.add(const SizedBox(height: 12));
+    }
+
+    // ============ 💰 القسم المالي ============
+    final finance = <Widget>[
+      _btn(context, settings, 'fees', 'رسوم الطلاب',
+          Icons.attach_money, const FeesScreen()),
+      _btn(context, settings, 'employees', 'الموظفون',
+          Icons.badge, const EmployeesScreen()),
+      _btn(context, settings, 'payroll', 'كشف الرواتب',
+          Icons.payments, const PayrollScreen()),
+    ].whereType<Widget>().toList();
+
+    if (finance.isNotEmpty) {
+      all.add(_sectionTitle('💰 المالية', settings.primaryColor));
+      all.addAll(_pairRows(finance));
+
+      // 🏦 زر الخزينة العامة — عريض بارز
+      if (settings.isEnabled('finance')) {
+        all.add(_bigTreasuryButton(context, settings));
       }
-      buttons.add(const SizedBox(height: 12));
+      all.add(const SizedBox(height: 12));
     }
 
-    Widget? btn(String key, String label, IconData icon, Widget screen) {
-      if (!settings.isEnabled(key)) return null;
-      return NavButton(
-        label: label,
-        icon: icon,
-        onTap: () => _nav(context, screen),
-      );
-    }
+    // ============ 🎨 قسم التخصيص ============
+    all.add(_sectionTitle('🎨 التخصيص', settings.primaryColor));
+    all.add(Row(children: [
+      _customButton(
+        context,
+        label: 'الثيمات والألوان',
+        icon: Icons.palette,
+        color: settings.primaryColor,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ThemesScreen()),
+        ),
+      ),
+    ]));
+    all.add(const SizedBox(height: 12));
 
-    // ========== 🏫 الأكاديمي ==========
-    addRow(
-      btn('schedule', 'جدول الحصص', Icons.calendar_month,
-          const ScheduleScreen()),
-      btn('teachers', 'المعلمون', Icons.person, const TeachersScreen()),
-    );
-
-    addRow(
-      btn('subjects', 'المواد', Icons.book, const SubjectsScreen()),
-      btn('students', 'الطلاب', Icons.school, const StudentsScreen()),
-    );
-
-    addRow(
-      btn('guardians', 'أولياء الأمور', Icons.family_restroom,
-          const GuardiansScreen()),
-      btn('grades', 'الدرجات', Icons.grade, const GradesScreen()),
-    );
-
-    addRow(
-      btn('attendance', 'الغياب', Icons.event_busy,
-          const AttendanceScreen()),
-      btn('calendar', 'التقويم', Icons.calendar_today,
-          const CalendarScreen()),
-    );
-
-    // ========== 💰 المالية ==========
-    addRow(
-      btn('fees', 'رسوم الطلاب', Icons.attach_money,
-          const FeesScreen()),
-      btn('employees', 'الموظفون', Icons.badge, const EmployeesScreen()),
-    );
-
-    addRow(
-      btn('payroll', 'كشف الرواتب', Icons.payments,
-          const PayrollScreen()),
-      btn('finance', 'الخزينة', Icons.account_balance,
-          const FinanceScreen()),
-    );
-
-    addRow(
-      btn('teacherDaily', 'جدول المعلم', Icons.person_pin_circle,
-          const TeacherDailyScreen()),
-      null,
-    );
-
-    // ========== 📊 التقارير ==========
-    addRow(
-      btn('certificates', 'الشهادات', Icons.card_membership,
-          const CertificatesScreen()),
-      btn('reports', 'التقارير', Icons.assessment,
-          const ReportsScreen()),
-    );
-
-    addRow(
-      btn('stats', 'الإحصائيات', Icons.bar_chart, const StatsScreen()),
-      null,
-    );
-
-    // ========== 🚪 الخروج ==========
-    buttons.add(Row(children: [
+    // ============ 🚪 تسجيل الخروج ============
+    all.add(Row(children: [
       NavButton(
         label: "✕ تسجيل خروج",
         isExit: true,
@@ -279,11 +202,172 @@ class HomeScreen extends StatelessWidget {
       ),
     ]));
 
-    return buttons;
+    return all;
   }
 
-  void _nav(BuildContext context, Widget screen) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  /// تحويل قائمة الأزرار إلى صفوف (2 لكل صف)
+  List<Widget> _pairRows(List<Widget> buttons) {
+    final rows = <Widget>[];
+    for (int i = 0; i < buttons.length; i += 2) {
+      if (i + 1 < buttons.length) {
+        rows.add(Row(children: [
+          Expanded(child: buttons[i]),
+          const SizedBox(width: 12),
+          Expanded(child: buttons[i + 1]),
+        ]));
+      } else {
+        rows.add(Row(children: [
+          Expanded(child: buttons[i]),
+          const SizedBox(width: 12),
+          const Spacer(),
+        ]));
+      }
+      rows.add(const SizedBox(height: 12));
+    }
+    return rows;
+  }
+
+  Widget _sectionTitle(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Text(title,
+            style: TextStyle(
+                color: color,
+                fontFamily: 'Changa',
+                fontSize: 15,
+                fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _btn(BuildContext context, SettingsProvider settings,
+      String key, String label, IconData icon, Widget screen) {
+    if (!settings.isEnabled(key)) return const SizedBox.shrink();
+    return NavButton(
+      label: label,
+      icon: icon,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => screen),
+      ),
+    );
+  }
+
+  Widget _customButton(BuildContext context,
+      {required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Ink(
+            height: 55,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  AppColors.darkNavy,
+                ],
+              ),
+              border: Border.all(color: color, width: 2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: TextStyle(
+                        color: color,
+                        fontFamily: 'Changa',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bigTreasuryButton(
+      BuildContext context, SettingsProvider settings) {
+    final primary = settings.primaryColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FinanceScreen()),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(
+              vertical: 14, horizontal: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                primary.withOpacity(0.3),
+                primary.withOpacity(0.08),
+              ],
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+            ),
+            border: Border.all(color: primary, width: 2),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: primary.withOpacity(0.25),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.account_balance,
+                    color: primary, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("الخزينة العامة",
+                        style: TextStyle(
+                            color: primary,
+                            fontFamily: 'Changa',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    const Text("الحسابات • الحركات • التقارير",
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Changa',
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  color: primary, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _confirmExit(BuildContext context) {
@@ -295,7 +379,8 @@ class HomeScreen extends StatelessWidget {
             style: TextStyle(
                 color: AppColors.gold, fontFamily: 'Changa')),
         content: const Text("هل تريد الخروج من الحساب؟",
-            style: TextStyle(color: Colors.white, fontFamily: 'Changa')),
+            style: TextStyle(
+                color: Colors.white, fontFamily: 'Changa')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -306,7 +391,8 @@ class HomeScreen extends StatelessWidget {
               await AuthService.setLoggedIn(false);
               if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                MaterialPageRoute(
+                    builder: (_) => const LoginScreen()),
                 (r) => false,
               );
             },
