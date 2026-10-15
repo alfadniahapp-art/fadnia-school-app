@@ -6,6 +6,7 @@ import '../services/backup_service.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/date_formatter.dart';
 import '../widgets/common_widgets.dart';
 import 'welcome_screen.dart';
 
@@ -86,6 +87,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _snack(context, "تم الحفظ");
                 },
               ),
+
+              // ============ 🗓️ نوع التقويم ============
+              _section("🗓️ نوع التقويم", s.primaryColor),
+              const Text(
+                "اختر طريقة عرض التواريخ في التطبيق",
+                style: TextStyle(
+                    color: Colors.white54,
+                    fontFamily: 'Changa',
+                    fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              _calendarOption(
+                  context,
+                  s,
+                  CalendarType.hijri,
+                  "هجري",
+                  "مثال: 15 ربيع الأول 1446 هـ",
+                  "🌙"),
+              _calendarOption(
+                  context,
+                  s,
+                  CalendarType.gregorian,
+                  "ميلادي",
+                  "مثال: 15/10/2026",
+                  "📅"),
+              _calendarOption(
+                  context,
+                  s,
+                  CalendarType.both,
+                  "الاثنان معاً",
+                  "15 ربيع الأول 1446 هـ  •  15/10/2026",
+                  "🌍"),
 
               // ============ 💰 العملة ============
               _section("💰 العملة", s.primaryColor),
@@ -292,7 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 30),
-              const Text("الإصدار 6.0.0",
+              const Text("الإصدار 6.2.0",
                   style: TextStyle(
                       color: Colors.white38,
                       fontFamily: 'Changa',
@@ -331,6 +364,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Changa')),
+      ),
+    );
+  }
+
+  Widget _calendarOption(BuildContext context, SettingsProvider s,
+      CalendarType type, String title, String example, String emoji) {
+    final selected = s.calendarType == type;
+    return GestureDetector(
+      onTap: () {
+        s.setCalendarType(type);
+        _snack(context, "تم تغيير التقويم إلى: $title");
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? s.primaryColor.withOpacity(0.15)
+              : AppColors.darkNavy,
+          border: Border.all(
+            color: selected ? s.primaryColor : AppColors.border,
+            width: selected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: selected
+                              ? s.primaryColor
+                              : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Changa')),
+                  const SizedBox(height: 2),
+                  Text(example,
+                      style: const TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Changa',
+                          fontSize: 11)),
+                ],
+              ),
+            ),
+            Icon(
+              selected ? Icons.check_circle : Icons.circle_outlined,
+              color: selected ? s.primaryColor : Colors.white24,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -429,8 +517,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(template,
                       style: TextStyle(
-                          color:
-                              selected ? s.primaryColor : Colors.white,
+                          color: selected
+                              ? s.primaryColor
+                              : Colors.white,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Changa')),
                   Text(desc,
