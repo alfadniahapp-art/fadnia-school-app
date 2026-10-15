@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/school_data.dart';
+import '../models/settings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 
@@ -16,16 +17,18 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
   @override
   Widget build(BuildContext context) {
     final data = context.watch<SchoolDataProvider>();
-    _teacher ??= data.teachers.isEmpty ? null : data.teachers.first.display;
+    final settings = context.watch<SettingsProvider>();
+    _teacher ??= data.teachers.isEmpty ? null : data.teachers.first.name;
 
     final today = _currentDayName(data.days);
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.darkNavy,
-        title: const Text("جدول المعلم اليومي",
-            style: TextStyle(color: AppColors.gold, fontFamily: 'Changa')),
-        iconTheme: const IconThemeData(color: AppColors.gold),
+        backgroundColor: settings.backgroundColor,
+        title: Text("جدول المعلم اليومي",
+            style: TextStyle(
+                color: settings.primaryColor, fontFamily: 'Changa')),
+        iconTheme: IconThemeData(color: settings.primaryColor),
       ),
       body: Container(
         decoration: AppTheme.backgroundDecoration,
@@ -40,28 +43,28 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                 dropdownColor: AppColors.darkNavy,
                 items: data.teachers
                     .map((t) => DropdownMenuItem(
-                        value: t.display, child: Text(t.display)))
+                        value: t.name, child: Text(t.name)))
                     .toList(),
                 onChanged: (v) => setState(() => _teacher = v),
               ),
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.1),
-                  border: Border.all(color: AppColors.gold),
+                  color: settings.primaryColor.withOpacity(0.1),
+                  border: Border.all(color: settings.primaryColor),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.today,
-                        color: AppColors.gold, size: 20),
+                    Icon(Icons.today,
+                        color: settings.primaryColor, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       _teacher ?? '—',
-                      style: const TextStyle(
-                          color: AppColors.gold,
+                      style: TextStyle(
+                          color: settings.primaryColor,
                           fontFamily: 'Changa',
                           fontWeight: FontWeight.bold,
                           fontSize: 15),
@@ -99,7 +102,7 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                               color: AppColors.darkNavy,
                               border: Border.all(
                                   color: isToday
-                                      ? AppColors.gold
+                                      ? settings.primaryColor
                                       : AppColors.border,
                                   width: isToday ? 2 : 1),
                               borderRadius: BorderRadius.circular(10),
@@ -112,7 +115,7 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                                     day,
                                     style: TextStyle(
                                         color: isToday
-                                            ? AppColors.gold
+                                            ? settings.primaryColor
                                             : Colors.white,
                                         fontFamily: 'Changa',
                                         fontWeight: FontWeight.bold,
@@ -124,13 +127,13 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.gold,
+                                        color: settings.primaryColor,
                                         borderRadius:
                                             BorderRadius.circular(4),
                                       ),
                                       child: const Text("اليوم",
                                           style: TextStyle(
-                                              color: AppColors.darkNavy,
+                                              color: AppColors.darkest,
                                               fontSize: 10,
                                               fontFamily: 'Changa')),
                                     ),
@@ -143,8 +146,8 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                                           fontSize: 12)),
                                 ],
                               ),
-                              iconColor: AppColors.gold,
-                              collapsedIconColor: AppColors.gold,
+                              iconColor: settings.primaryColor,
+                              collapsedIconColor: settings.primaryColor,
                               children: schedule.isEmpty
                                   ? [
                                       const Padding(
@@ -156,7 +159,8 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                                       )
                                     ]
                                   : data.lessons
-                                      .where((l) => schedule.containsKey(l))
+                                      .where(
+                                          (l) => schedule.containsKey(l))
                                       .map((lesson) {
                                       final cls = schedule[lesson];
                                       return ListTile(
@@ -175,8 +179,9 @@ class _TeacherDailyScreenState extends State<TeacherDailyScreen> {
                                                 color: Colors.white,
                                                 fontFamily: 'Changa')),
                                         subtitle: Text("الحصة $lesson",
-                                            style: const TextStyle(
-                                                color: AppColors.gold,
+                                            style: TextStyle(
+                                                color:
+                                                    settings.primaryColor,
                                                 fontFamily: 'Changa',
                                                 fontSize: 12)),
                                       );
