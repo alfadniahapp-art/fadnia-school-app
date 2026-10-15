@@ -19,6 +19,8 @@ import 'stats_screen.dart';
 import 'calendar_screen.dart';
 import 'fees_screen.dart';
 import 'teacher_daily_screen.dart';
+import 'employees_screen.dart';
+import 'payroll_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -113,27 +115,24 @@ class HomeScreen extends StatelessWidget {
       );
     }
 
-    // الصف 1: جدول + معلمون
+    // ========== 🏫 الأكاديمي ==========
     addRow(
       btn('schedule', 'جدول الحصص', Icons.calendar_month,
           const ScheduleScreen()),
       btn('teachers', 'المعلمون', Icons.person, const TeachersScreen()),
     );
 
-    // الصف 2: مواد + طلاب
     addRow(
       btn('subjects', 'المواد', Icons.book, const SubjectsScreen()),
       btn('students', 'الطلاب', Icons.school, const StudentsScreen()),
     );
 
-    // الصف 3: أولياء الأمور + الدرجات
     addRow(
       btn('guardians', 'أولياء الأمور', Icons.family_restroom,
           const GuardiansScreen()),
       btn('grades', 'الدرجات', Icons.grade, const GradesScreen()),
     );
 
-    // الصف 4: الغياب + التقويم
     addRow(
       btn('attendance', 'الغياب', Icons.event_busy,
           const AttendanceScreen()),
@@ -141,14 +140,21 @@ class HomeScreen extends StatelessWidget {
           const CalendarScreen()),
     );
 
-    // الصف 5: الرسوم + جدول المعلم
+    // ========== 💰 المالية ==========
     addRow(
-      btn('fees', 'الرسوم', Icons.attach_money, const FeesScreen()),
+      btn('fees', 'رسوم الطلاب', Icons.attach_money,
+          const FeesScreen()),
+      btn('employees', 'الموظفون', Icons.badge, const EmployeesScreen()),
+    );
+
+    addRow(
+      btn('payroll', 'كشف الرواتب', Icons.payments,
+          const PayrollScreen()),
       btn('teacherDaily', 'جدول المعلم', Icons.person_pin_circle,
           const TeacherDailyScreen()),
     );
 
-    // الصف 6: الشهادات + التقارير
+    // ========== 📊 التقارير ==========
     addRow(
       btn('certificates', 'الشهادات', Icons.card_membership,
           const CertificatesScreen()),
@@ -156,13 +162,12 @@ class HomeScreen extends StatelessWidget {
           const ReportsScreen()),
     );
 
-    // الصف 7: الإحصائيات
     addRow(
       btn('stats', 'الإحصائيات', Icons.bar_chart, const StatsScreen()),
       null,
     );
 
-    // زر تسجيل الخروج دائماً
+    // ========== 🚪 الخروج ==========
     buttons.add(Row(children: [
       NavButton(
         label: "✕ تسجيل خروج",
