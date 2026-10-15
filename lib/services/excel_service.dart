@@ -5,6 +5,9 @@ import 'package:share_plus/share_plus.dart';
 import '../models/school_data.dart';
 
 class ExcelService {
+  // ============================================================
+  //  📅 جدول الحصص
+  // ============================================================
   static Future<void> exportSchedule(
       SchoolDataProvider data, String cls) async {
     final excel = Excel.createExcel();
@@ -25,6 +28,9 @@ class ExcelService {
     await _saveAndShare(excel, 'جدول_$cls.xlsx');
   }
 
+  // ============================================================
+  //  👤 قائمة الطلاب (بدون جنس/رقم جلوس)
+  // ============================================================
   static Future<void> exportStudents(
       SchoolDataProvider data, String cls) async {
     final excel = Excel.createExcel();
@@ -35,9 +41,8 @@ class ExcelService {
       TextCellValue('م'),
       TextCellValue('الاسم'),
       TextCellValue('العمر'),
-      TextCellValue('الجنس'),
-      TextCellValue('رقم الجلوس'),
       TextCellValue('ولي الأمر'),
+      TextCellValue('هاتف ولي الأمر'),
       TextCellValue('الفصل'),
     ]);
 
@@ -49,9 +54,8 @@ class ExcelService {
         IntCellValue(i + 1),
         TextCellValue(s.name),
         TextCellValue(s.age),
-        TextCellValue(s.gender),
-        TextCellValue(s.seatNumber),
         TextCellValue(guardian?.name ?? '-'),
+        TextCellValue(guardian?.phonePrimary ?? '-'),
         TextCellValue(s.classRoom),
       ]);
     }
@@ -59,6 +63,9 @@ class ExcelService {
     await _saveAndShare(excel, 'طلاب_$cls.xlsx');
   }
 
+  // ============================================================
+  //  📊 الدرجات
+  // ============================================================
   static Future<void> exportGrades(
       SchoolDataProvider data, String cls) async {
     final excel = Excel.createExcel();
@@ -93,6 +100,9 @@ class ExcelService {
     await _saveAndShare(excel, 'درجات_$cls.xlsx');
   }
 
+  // ============================================================
+  //  👨‍🏫 المعلمون
+  // ============================================================
   static Future<void> exportTeachers(SchoolDataProvider data) async {
     final excel = Excel.createExcel();
     final sheet = excel['المعلمون'];
@@ -122,6 +132,9 @@ class ExcelService {
     await _saveAndShare(excel, 'المعلمون.xlsx');
   }
 
+  // ============================================================
+  //  👨‍👦 أولياء الأمور
+  // ============================================================
   static Future<void> exportGuardians(SchoolDataProvider data) async {
     final excel = Excel.createExcel();
     final sheet = excel['أولياء الأمور'];
@@ -135,10 +148,12 @@ class ExcelService {
       TextCellValue('الهاتف الاحتياطي'),
       TextCellValue('العنوان'),
       TextCellValue('المهنة'),
+      TextCellValue('عدد الأبناء'),
     ]);
 
     for (int i = 0; i < data.guardians.length; i++) {
       final g = data.guardians[i];
+      final children = data.studentsOfGuardian(g.id).length;
       sheet.appendRow([
         IntCellValue(i + 1),
         TextCellValue(g.name),
@@ -147,12 +162,16 @@ class ExcelService {
         TextCellValue(g.phoneSecondary),
         TextCellValue(g.address),
         TextCellValue(g.occupation),
+        IntCellValue(children),
       ]);
     }
 
     await _saveAndShare(excel, 'أولياء_الأمور.xlsx');
   }
 
+  // ============================================================
+  //  📤 الحفظ والمشاركة
+  // ============================================================
   static Future<void> _saveAndShare(Excel excel, String filename) async {
     final bytes = excel.save();
     if (bytes == null) return;
