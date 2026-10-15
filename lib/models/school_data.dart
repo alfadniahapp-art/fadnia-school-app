@@ -91,14 +91,12 @@ class Teacher {
 }
 
 // ============================================================
-//  👤 الطالب
+//  👤 الطالب — حقول مبسّطة
 // ============================================================
 class Student {
   final String name;
   final String classRoom;
   final String age;
-  final String gender;
-  final String seatNumber;
   final String? guardianId;
   final String? photoPath;
 
@@ -106,8 +104,6 @@ class Student {
     required this.name,
     required this.classRoom,
     this.age = '',
-    this.gender = 'ذكر',
-    this.seatNumber = '',
     this.guardianId,
     this.photoPath,
   });
@@ -116,8 +112,6 @@ class Student {
         'name': name,
         'classRoom': classRoom,
         'age': age,
-        'gender': gender,
-        'seatNumber': seatNumber,
         'guardianId': guardianId,
         'photoPath': photoPath,
       };
@@ -126,8 +120,6 @@ class Student {
         name: j['name'] ?? '',
         classRoom: j['classRoom'] ?? '',
         age: j['age'] ?? '',
-        gender: j['gender'] ?? 'ذكر',
-        seatNumber: j['seatNumber'] ?? '',
         guardianId: j['guardianId'],
         photoPath: j['photoPath'],
       );
@@ -247,7 +239,6 @@ class SchoolDataProvider extends ChangeNotifier {
       ];
     }
 
-    // 🏦 إنشاء صندوق افتراضي إن لم يوجد
     if (financeAccounts.isEmpty) {
       financeAccounts = [
         FinanceAccount(
@@ -374,7 +365,7 @@ class SchoolDataProvider extends ChangeNotifier {
   }
 
   // ============================================================
-  //  👤 الطلاب
+  //  👤 الطلاب — مع دوال التجميع حسب الفصل
   // ============================================================
   void addStudent(Student s) {
     students.add(s);
@@ -396,6 +387,41 @@ class SchoolDataProvider extends ChangeNotifier {
 
   List<Student> studentsOf(String cls) =>
       students.where((s) => s.classRoom == cls).toList();
+
+  /// 📊 عدد الطلاب في فصل معين
+  int studentCountIn(String cls) =>
+      students.where((s) => s.classRoom == cls).length;
+
+  /// 📊 إجمالي الطلاب
+  int get totalStudents => students.length;
+
+  /// 📊 الطلاب مجمّعين حسب الفصل
+  /// مفيد لعرض قوائم منفصلة لكل فصل
+  Map<String, List<Student>> get studentsPerClass {
+    final map = <String, List<Student>>{};
+    for (final cls in classes) {
+      final list = studentsOf(cls);
+      if (list.isNotEmpty) map[cls] = list;
+    }
+    return map;
+  }
+
+  /// 📊 الفصول التي لديها طلاب فقط
+  List<String> get classesWithStudents {
+    return classes.where((c) => studentCountIn(c) > 0).toList();
+  }
+
+  /// 📊 الفصول التي ليس فيها طلاب
+  List<String> get emptyClasses {
+    return classes.where((c) => studentCountIn(c) == 0).toList();
+  }
+
+  /// 📊 عدد الطلاب في كل فصل (للمخططات)
+  List<MapEntry<String, int>> get classCounts {
+    return classes
+        .map((c) => MapEntry(c, studentCountIn(c)))
+        .toList();
+  }
 
   // ============================================================
   //  👨‍👦 أولياء الأمور
@@ -525,7 +551,6 @@ class SchoolDataProvider extends ChangeNotifier {
     final i = payrollRecords.indexWhere((r) => r.id == p.id);
     if (i != -1) {
       final old = payrollRecords[i];
-      // 🔗 ربط تلقائي بالخزينة عند تحوّل الحالة إلى مدفوع
       if (old.status != PaymentStatus.paid &&
           p.status == PaymentStatus.paid) {
         _recordPayrollPayment(p);
@@ -620,7 +645,6 @@ class SchoolDataProvider extends ChangeNotifier {
 
   void removeAccount(String id) {
     financeAccounts.removeWhere((a) => a.id == id);
-    // حذف الحركات المرتبطة
     financeTransactions.removeWhere((t) => t.accountId == id);
     saveData();
     notifyListeners();
@@ -634,7 +658,6 @@ class SchoolDataProvider extends ChangeNotifier {
     }
   }
 
-  /// الصندوق الافتراضي
   FinanceAccount get defaultAccount {
     try {
       return financeAccounts.firstWhere((a) => a.isDefault);
@@ -675,7 +698,6 @@ class SchoolDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// حركات حساب معين
   List<FinanceTransaction> transactionsOf(String accountId) {
     return financeTransactions
         .where((t) => t.accountId == accountId)
@@ -683,13 +705,11 @@ class SchoolDataProvider extends ChangeNotifier {
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
-  /// كل الحركات مرتبة
   List<FinanceTransaction> get allTransactions {
     return [...financeTransactions]
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
-  /// رصيد حساب معين
   double balanceOf(String accountId) {
     final acc = accountById(accountId);
     if (acc == null) return 0;
@@ -702,7 +722,6 @@ class SchoolDataProvider extends ChangeNotifier {
     return balance;
   }
 
-  /// إجمالي الرصيد
   double get totalBalance {
     double total = 0;
     for (final a in financeAccounts) {
@@ -711,13 +730,11 @@ class SchoolDataProvider extends ChangeNotifier {
     return total;
   }
 
-  /// الملخص المالي
   FinanceSummary get financeSummary => FinanceSummary(
         accounts: financeAccounts,
         transactions: financeTransactions,
       );
 
-  /// توليد رقم سند تسلسلي
   String nextReference(TransactionType type) {
     final prefix = type == TransactionType.receipt ? 'RC' : 'PV';
     final year = DateTime.now().year;
@@ -731,8 +748,6 @@ class SchoolDataProvider extends ChangeNotifier {
   // ============================================================
   //  🔗 الربط التلقائي
   // ============================================================
-
-  /// عند دفع راتب موظف → خصم من الخزينة
   void _recordPayrollPayment(PayrollRecord p) {
     final account = defaultAccount;
     final t = FinanceTransaction(
@@ -751,7 +766,6 @@ class SchoolDataProvider extends ChangeNotifier {
     financeTransactions.add(t);
   }
 
-  /// عند استلام رسوم طالب → إضافة للخزينة
   void recordStudentFeePayment({
     required String studentName,
     required String classRoom,
