@@ -14,26 +14,35 @@ class StudentsScreen extends StatefulWidget {
 }
 
 class _StudentsScreenState extends State<StudentsScreen> {
-  String? _cls;
+  String _search = '';
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
     final data = context.watch<SchoolDataProvider>();
     final settings = context.watch<SettingsProvider>();
-    _cls ??= data.classes.first;
-    final students = data.studentsOf(_cls!);
+    final primary = settings.primaryColor;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: settings.backgroundColor,
         title: Text("قائمة الطلاب",
-            style: TextStyle(
-                color: settings.primaryColor, fontFamily: 'Changa')),
-        iconTheme: IconThemeData(color: settings.primaryColor),
+            style: TextStyle(color: primary, fontFamily: 'Changa')),
+        iconTheme: IconThemeData(color: primary),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _showAll ? Icons.view_agenda : Icons.view_list,
+              color: primary,
+            ),
+            tooltip: _showAll ? "عرض حسب الفصل" : "عرض الكل",
+            onPressed: () => setState(() => _showAll = !_showAll),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: settings.primaryColor,
-        onPressed: () => _addStudentDialog(context, data),
+        backgroundColor: primary,
+        onPressed: () => _dialog(context, data),
         child: const Icon(Icons.add, color: Colors.black),
       ),
       body: Container(
@@ -42,119 +51,27 @@ class _StudentsScreenState extends State<StudentsScreen> {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              const CustomLabel("الفصل:"),
-              DropdownButtonFormField<String>(
-                value: _cls,
-                isExpanded: true,
-                dropdownColor: AppColors.darkNavy,
-                items: data.classes
-                    .map((c) =>
-                        DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() => _cls = v),
+              // ============ الإحصائيات ============
+              _statsBar(data, primary),
+
+              const SizedBox(height: 10),
+
+              // ============ البحث ============
+              TextField(
+                onChanged: (v) => setState(() => _search = v),
+                decoration: InputDecoration(
+                  hintText: "🔍 ابحث عن طالب",
+                  prefixIcon: Icon(Icons.search, color: primary),
+                  isDense: true,
+                ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 12),
+
+              // ============ القائمة ============
               Expanded(
-                child: students.isEmpty
-                    ? const Center(
-                        child: Text("لا يوجد طلاب في هذا الفصل",
-                            style: TextStyle(
-                                color: Colors.white54,
-                                fontFamily: 'Changa')),
-                      )
-                    : ListView.builder(
-                        itemCount: students.length,
-                        itemBuilder: (_, i) {
-                          final s = students[i];
-                          final guardian = data.guardianById(s.guardianId);
-                          return Card(
-                            color: AppColors.darkNavy,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(
-                                  color: AppColors.border),
-                            ),
-                            child: ListTile(
-                              onTap: () => _showStudentDetails(
-                                  context, data, s, i),
-                              leading: _photoAvatar(s.photoPath, '${i + 1}'),
-                              title: Text(s.name,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: 'Changa',
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold)),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(s.classRoom,
-                                      style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontFamily: 'Changa',
-                                          fontSize: 12)),
-                                  if (guardian != null)
-                                    Text("👨‍👦 ${guardian.name}",
-                                        style: const TextStyle(
-                                            color: Colors.white38,
-                                            fontFamily: 'Changa',
-                                            fontSize: 11)),
-                                ],
-                              ),
-                              trailing: PopupMenuButton<String>(
-                                icon: Icon(Icons.more_vert,
-                                    color: settings.primaryColor),
-                                color: AppColors.darkNavy,
-                                onSelected: (v) async {
-                                  if (v == 'photo') {
-                                    final picker = ImagePicker();
-                                    final img = await picker.pickImage(
-                                        source: ImageSource.gallery);
-                                    if (img != null) {
-                                      data.updateStudent(
-                                          i,
-                                          Student(
-                                            name: s.name,
-                                            classRoom: s.classRoom,
-                                            age: s.age,
-                                            gender: s.gender,
-                                            seatNumber: s.seatNumber,
-                                            guardianId: s.guardianId,
-                                            photoPath: img.path,
-                                          ));
-                                    }
-                                  } else if (v == 'edit') {
-                                    _addStudentDialog(context, data,
-                                        editing: s, index: i);
-                                  } else if (v == 'delete') {
-                                    data.removeStudent(i);
-                                  }
-                                },
-                                itemBuilder: (_) => const [
-                                  PopupMenuItem(
-                                      value: 'photo',
-                                      child: Text("تغيير الصورة",
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Changa'))),
-                                  PopupMenuItem(
-                                      value: 'edit',
-                                      child: Text("تعديل",
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Changa'))),
-                                  PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text("حذف",
-                                          style: TextStyle(
-                                              color: Colors.redAccent,
-                                              fontFamily: 'Changa'))),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                child: _showAll
+                    ? _buildFlatList(context, data, settings)
+                    : _buildGroupedList(context, data, settings),
               ),
             ],
           ),
@@ -163,28 +80,361 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
+  // ============================================================
+  //  📊 إحصائيات سريعة
+  // ============================================================
+  Widget _statsBar(SchoolDataProvider data, Color primary) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.darkNavy,
+        border: Border.all(color: primary, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _statItem(
+              icon: Icons.people,
+              label: "إجمالي الطلاب",
+              value: "${data.totalStudents}",
+              color: primary,
+            ),
+          ),
+          Container(width: 1, height: 40, color: AppColors.border),
+          Expanded(
+            child: _statItem(
+              icon: Icons.class_,
+              label: "فصول فيها طلاب",
+              value: "${data.classesWithStudents.length}/${data.classes.length}",
+              color: AppColors.blue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 4),
+        Text(value,
+            style: TextStyle(
+                color: color,
+                fontFamily: 'Changa',
+                fontWeight: FontWeight.bold,
+                fontSize: 16)),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white54,
+                fontFamily: 'Changa',
+                fontSize: 10),
+            textAlign: TextAlign.center),
+      ],
+    );
+  }
+
+  // ============================================================
+  //  📋 عرض مُجمَّع حسب الفصل
+  // ============================================================
+  Widget _buildGroupedList(
+      BuildContext context, SchoolDataProvider data, SettingsProvider s) {
+    final grouped = data.studentsPerClass;
+
+    if (grouped.isEmpty) {
+      return const Center(
+        child: Text("لا يوجد طلاب مسجلون بعد",
+            style: TextStyle(
+                color: Colors.white54, fontFamily: 'Changa')),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: grouped.length,
+      itemBuilder: (_, i) {
+        final cls = grouped.keys.elementAt(i);
+        var list = grouped[cls]!;
+
+        if (_search.isNotEmpty) {
+          list = list
+              .where((st) => st.name.contains(_search))
+              .toList();
+        }
+
+        if (list.isEmpty && _search.isNotEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return _classGroup(context, data, s, cls, list);
+      },
+    );
+  }
+
+  Widget _classGroup(BuildContext context, SchoolDataProvider data,
+      SettingsProvider s, String cls, List<Student> students) {
+    final primary = s.primaryColor;
+    final allClassStudents = data.studentsOf(cls);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.darkNavy,
+        border: Border.all(color: primary.withOpacity(0.5), width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14),
+          childrenPadding: EdgeInsets.zero,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.class_, color: primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(cls,
+                        style: TextStyle(
+                            color: primary,
+                            fontFamily: 'Changa',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15)),
+                    Text(
+                        "${allClassStudents.length} طالب",
+                        style: const TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Changa',
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          iconColor: primary,
+          collapsedIconColor: primary,
+          children: students.isEmpty
+              ? [
+                  const Padding(
+                    padding: EdgeInsets.all(15),
+                    child: Text("لا يوجد طلاب في هذا الفصل",
+                        style: TextStyle(
+                            color: Colors.white38,
+                            fontFamily: 'Changa',
+                            fontSize: 12)),
+                  )
+                ]
+              : students.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final st = entry.value;
+                  final realIndex = data.students.indexOf(st);
+                  return _studentCard(
+                      context, data, s, st, realIndex, idx + 1);
+                }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  //  📋 عرض مسطّح (الكل في قائمة واحدة)
+  // ============================================================
+  Widget _buildFlatList(
+      BuildContext context, SchoolDataProvider data, SettingsProvider s) {
+    var list = data.students;
+    if (_search.isNotEmpty) {
+      list = list.where((st) => st.name.contains(_search)).toList();
+    }
+
+    if (list.isEmpty) {
+      return const Center(
+        child: Text("لا يوجد طلاب",
+            style: TextStyle(
+                color: Colors.white54, fontFamily: 'Changa')),
+      );
+    }
+
+    // ترتيب حسب الفصل ثم الاسم
+    list = [...list]
+      ..sort((a, b) {
+        final cmp = a.classRoom.compareTo(b.classRoom);
+        if (cmp != 0) return cmp;
+        return a.name.compareTo(b.name);
+      });
+
+    return ListView.builder(
+      itemCount: list.length,
+      itemBuilder: (_, i) {
+        final st = list[i];
+        final realIndex = data.students.indexOf(st);
+        return _studentCard(context, data, s, st, realIndex, i + 1);
+      },
+    );
+  }
+
+  // ============================================================
+  //  👤 بطاقة الطالب
+  // ============================================================
+  Widget _studentCard(BuildContext context, SchoolDataProvider data,
+      SettingsProvider s, Student st, int index, int displayNum) {
+    final guardian = data.guardianById(st.guardianId);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+      decoration: BoxDecoration(
+        color: AppColors.darkest.withOpacity(0.5),
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        onTap: () => _details(context, data, st, index),
+        leading: _photoAvatar(st.photoPath, '$displayNum'),
+        title: Text(st.name,
+            style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Changa',
+                fontWeight: FontWeight.bold,
+                fontSize: 14)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.school,
+                    size: 11, color: s.primaryColor.withOpacity(0.7)),
+                const SizedBox(width: 4),
+                Text(st.classRoom,
+                    style: TextStyle(
+                        color: s.primaryColor.withOpacity(0.8),
+                        fontFamily: 'Changa',
+                        fontSize: 11)),
+                if (st.age.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.cake,
+                      size: 11, color: Colors.white54),
+                  const SizedBox(width: 3),
+                  Text("${st.age} سنة",
+                      style: const TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Changa',
+                          fontSize: 11)),
+                ],
+              ],
+            ),
+            if (guardian != null) ...[
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const Icon(Icons.family_restroom,
+                      size: 11, color: Colors.white38),
+                  const SizedBox(width: 4),
+                  Text(guardian.name,
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontFamily: 'Changa',
+                          fontSize: 10)),
+                ],
+              ),
+            ],
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert,
+              color: s.primaryColor, size: 20),
+          color: AppColors.darkNavy,
+          onSelected: (v) async {
+            if (v == 'photo') {
+              final picker = ImagePicker();
+              final img = await picker.pickImage(
+                  source: ImageSource.gallery);
+              if (img != null) {
+                data.updateStudent(
+                    index,
+                    Student(
+                      name: st.name,
+                      classRoom: st.classRoom,
+                      age: st.age,
+                      guardianId: st.guardianId,
+                      photoPath: img.path,
+                    ));
+              }
+            } else if (v == 'edit') {
+              _dialog(context, data, editing: st, index: index);
+            } else if (v == 'delete') {
+              _confirmDelete(context, data, st, index);
+            }
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+                value: 'photo',
+                child: Text("تغيير الصورة",
+                    style: TextStyle(
+                        color: Colors.white, fontFamily: 'Changa'))),
+            PopupMenuItem(
+                value: 'edit',
+                child: Text("تعديل",
+                    style: TextStyle(
+                        color: Colors.white, fontFamily: 'Changa'))),
+            PopupMenuItem(
+                value: 'delete',
+                child: Text("حذف",
+                    style: TextStyle(
+                        color: Colors.redAccent,
+                        fontFamily: 'Changa'))),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _photoAvatar(String? path, String fallback) {
     if (path != null && File(path).existsSync()) {
       return CircleAvatar(
-        radius: 24,
+        radius: 22,
         backgroundImage: FileImage(File(path)),
       );
     }
     return CircleAvatar(
-      radius: 24,
+      radius: 22,
       backgroundColor: AppColors.navy,
       child: Text(fallback,
           style: const TextStyle(
-              color: AppColors.gold, fontFamily: 'Changa')),
+              color: AppColors.gold,
+              fontFamily: 'Changa',
+              fontWeight: FontWeight.bold,
+              fontSize: 13)),
     );
   }
 
-  void _addStudentDialog(BuildContext context, SchoolDataProvider data,
+  // ============================================================
+  //  ➕ إضافة / تعديل
+  // ============================================================
+  void _dialog(BuildContext context, SchoolDataProvider data,
       {Student? editing, int? index}) {
-    final nameCtrl = TextEditingController(text: editing?.name ?? '');
+    final nameCtrl =
+        TextEditingController(text: editing?.name ?? '');
     final ageCtrl = TextEditingController(text: editing?.age ?? '');
-    final seatCtrl = TextEditingController(text: editing?.seatNumber ?? '');
-    String gender = editing?.gender ?? 'ذكر';
+    String cls = editing?.classRoom ?? data.classes.first;
     String? guardianId = editing?.guardianId;
     String? photo = editing?.photoPath;
 
@@ -200,6 +450,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // الصورة
                 GestureDetector(
                   onTap: () async {
                     final picker = ImagePicker();
@@ -220,51 +471,54 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         : null,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+
+                // الاسم
                 TextField(
                   controller: nameCtrl,
-                  decoration:
-                      const InputDecoration(hintText: "اسم الطالب"),
+                  decoration: const InputDecoration(
+                      hintText: "اسم الطالب",
+                      prefixIcon: Icon(Icons.person)),
                 ),
                 const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(
-                    child: TextField(
-                      controller: ageCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration:
-                          const InputDecoration(hintText: "العمر"),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: seatCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          hintText: "رقم الجلوس"),
-                    ),
-                  ),
-                ]),
+
+                // العمر
+                TextField(
+                  controller: ageCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      hintText: "العمر (اختياري)",
+                      prefixIcon: Icon(Icons.cake)),
+                ),
                 const SizedBox(height: 8),
+
+                // الفصل
                 DropdownButtonFormField<String>(
-                  value: gender,
+                  value: cls,
+                  isExpanded: true,
                   dropdownColor: AppColors.darkNavy,
-                  items: const [
-                    DropdownMenuItem(value: 'ذكر', child: Text("ذكر")),
-                    DropdownMenuItem(value: 'أنثى', child: Text("أنثى")),
-                  ],
-                  onChanged: (v) => setD(() => gender = v!),
+                  decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.class_)),
+                  items: data.classes
+                      .map((c) => DropdownMenuItem(
+                          value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (v) => setD(() => cls = v!),
                 ),
                 const SizedBox(height: 8),
+
+                // ولي الأمر
                 DropdownButtonFormField<String>(
                   value: guardianId,
                   isExpanded: true,
                   dropdownColor: AppColors.darkNavy,
+                  decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.family_restroom)),
                   hint: const Text("ولي الأمر (اختياري)"),
                   items: data.guardians
                       .map((g) => DropdownMenuItem(
-                          value: g.id, child: Text(g.name)))
+                          value: g.id,
+                          child: Text("${g.name} (${g.relation})")))
                       .toList(),
                   onChanged: (v) => setD(() => guardianId = v),
                 ),
@@ -278,13 +532,11 @@ class _StudentsScreenState extends State<StudentsScreen> {
             ),
             TextButton(
               onPressed: () {
-                if (nameCtrl.text.isEmpty) return;
+                if (nameCtrl.text.trim().isEmpty) return;
                 final student = Student(
                   name: nameCtrl.text.trim(),
-                  classRoom: _cls!,
+                  classRoom: cls,
                   age: ageCtrl.text.trim(),
-                  gender: gender,
-                  seatNumber: seatCtrl.text.trim(),
                   guardianId: guardianId,
                   photoPath: photo,
                 );
@@ -304,10 +556,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  void _showStudentDetails(BuildContext context, SchoolDataProvider data,
-      Student s, int idx) {
-    final grades = data.grades[s.classRoom]?[s.name] ?? {};
-    final guardian = data.guardianById(s.guardianId);
+  // ============================================================
+  //  📋 التفاصيل
+  // ============================================================
+  void _details(BuildContext context, SchoolDataProvider data,
+      Student st, int idx) {
+    final grades = data.grades[st.classRoom]?[st.name] ?? {};
+    final guardian = data.guardianById(st.guardianId);
 
     showModalBottomSheet(
       context: context,
@@ -321,30 +576,22 @@ class _StudentsScreenState extends State<StudentsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _photoAvatar(s.photoPath, s.name.substring(0, 1)),
+              _photoAvatar(st.photoPath, st.name.substring(0, 1)),
               const SizedBox(height: 10),
-              Text(s.name,
+              Text(st.name,
                   style: const TextStyle(
                       color: AppColors.gold,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Changa')),
-              Text(s.classRoom,
+              Text(st.classRoom,
                   style: const TextStyle(
                       color: Colors.white70, fontFamily: 'Changa')),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (s.age.isNotEmpty)
-                    _chip("العمر: ${s.age}", AppColors.blue),
-                  const SizedBox(width: 6),
-                  _chip(s.gender, AppColors.green),
-                  const SizedBox(width: 6),
-                  if (s.seatNumber.isNotEmpty)
-                    _chip("#${s.seatNumber}", AppColors.orange),
-                ],
-              ),
+
+              if (st.age.isNotEmpty)
+                _chip("العمر: ${st.age} سنة", AppColors.blue),
+
               if (guardian != null) ...[
                 const Divider(color: AppColors.gold),
                 ListTile(
@@ -356,20 +603,28 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   subtitle: Text(
                       "${guardian.relation} • ${guardian.phonePrimary}",
                       style: const TextStyle(
-                          color: Colors.white54, fontFamily: 'Changa')),
+                          color: Colors.white54,
+                          fontFamily: 'Changa',
+                          fontSize: 12)),
                 ),
               ],
+
               const Divider(color: AppColors.gold),
               if (grades.isEmpty)
-                const Text("لا توجد درجات مسجلة",
-                    style: TextStyle(
-                        color: Colors.white54, fontFamily: 'Changa'))
+                const Padding(
+                  padding: EdgeInsets.all(15),
+                  child: Text("لا توجد درجات مسجلة",
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Changa')),
+                )
               else
                 ...grades.entries.map((e) => ListTile(
                       dense: true,
                       title: Text(e.key,
                           style: const TextStyle(
-                              color: Colors.white, fontFamily: 'Changa')),
+                              color: Colors.white,
+                              fontFamily: 'Changa')),
                       trailing: Text(e.value.toStringAsFixed(0),
                           style: const TextStyle(
                               color: AppColors.gold,
@@ -385,15 +640,48 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
   Widget _chip(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withOpacity(0.15),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(text,
           style: TextStyle(
               color: color, fontFamily: 'Changa', fontSize: 12)),
+    );
+  }
+
+  // ============================================================
+  //  🗑️ حذف
+  // ============================================================
+  void _confirmDelete(BuildContext context, SchoolDataProvider data,
+      Student st, int idx) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.darkNavy,
+        title: const Text("تأكيد الحذف",
+            style: TextStyle(
+                color: Colors.redAccent, fontFamily: 'Changa')),
+        content: Text("حذف الطالب: ${st.name}؟",
+            style: const TextStyle(
+                color: Colors.white, fontFamily: 'Changa')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("إلغاء"),
+          ),
+          TextButton(
+            onPressed: () {
+              data.removeStudent(idx);
+              Navigator.pop(context);
+            },
+            child: const Text("حذف",
+                style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
     );
   }
 }
