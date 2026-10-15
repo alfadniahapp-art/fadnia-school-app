@@ -21,6 +21,8 @@ import 'fees_screen.dart';
 import 'teacher_daily_screen.dart';
 import 'employees_screen.dart';
 import 'payroll_screen.dart';
+import 'finance_screen.dart';
+import 'about_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -42,7 +44,16 @@ class HomeScreen extends StatelessWidget {
                 // ============ الترويسة ============
                 Row(
                   children: [
-                    const SizedBox(width: 40),
+                    IconButton(
+                      icon: Icon(Icons.info_outline,
+                          color: settings.primaryColor),
+                      tooltip: "حول التطبيق",
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AboutScreen()),
+                      ),
+                    ),
                     Expanded(
                       child: Column(
                         children: [
@@ -74,9 +85,16 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                // ============ ملخص مالي سريع ============
+                if (settings.isEnabled('finance')) ...[
+                  const SizedBox(height: 15),
+                  _financeSummaryCard(context, data, settings),
+                ],
+
                 const SizedBox(height: 20),
 
-                // ============ الأزرار الديناميكية ============
+                // ============ الأزرار ============
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 500),
                   child: Column(
@@ -87,6 +105,84 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _financeSummaryCard(BuildContext context, SchoolDataProvider data,
+      SettingsProvider settings) {
+    final primary = settings.primaryColor;
+    final currency = settings.currencySymbol;
+    final balance = data.totalBalance;
+    final income = data.totalIncome;
+    final expense = data.totalExpense;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const FinanceScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              primary.withOpacity(0.25),
+              primary.withOpacity(0.05),
+            ],
+          ),
+          border: Border.all(color: primary, width: 2),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.account_balance_wallet,
+                    color: primary, size: 22),
+                const SizedBox(width: 8),
+                Text("💰 الخزينة العامة",
+                    style: TextStyle(
+                        color: primary,
+                        fontFamily: 'Changa',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                const Spacer(),
+                Icon(Icons.arrow_forward_ios,
+                    color: primary, size: 14),
+              ],
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              child: Text(
+                "${balance.toStringAsFixed(0)} $currency",
+                style: TextStyle(
+                    color: primary,
+                    fontFamily: 'Changa',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 28),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Text("📥 ${income.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                        color: AppColors.green,
+                        fontFamily: 'Changa',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+                Text("📤 ${expense.toStringAsFixed(0)}",
+                    style: const TextStyle(
+                        color: AppColors.red,
+                        fontFamily: 'Changa',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -150,8 +246,14 @@ class HomeScreen extends StatelessWidget {
     addRow(
       btn('payroll', 'كشف الرواتب', Icons.payments,
           const PayrollScreen()),
+      btn('finance', 'الخزينة', Icons.account_balance,
+          const FinanceScreen()),
+    );
+
+    addRow(
       btn('teacherDaily', 'جدول المعلم', Icons.person_pin_circle,
           const TeacherDailyScreen()),
+      null,
     );
 
     // ========== 📊 التقارير ==========
