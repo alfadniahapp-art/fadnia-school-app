@@ -237,7 +237,7 @@ class _TeachersScreenState extends State<TeachersScreen> {
                       .map((s) => Chip(
                             label: Text(s,
                                 style: const TextStyle(
-                                    color: AppColors.darkNest,
+                                    color: AppColors.darkest,
                                     fontFamily: 'Changa',
                                     fontSize: 12)),
                             backgroundColor: AppColors.gold,
