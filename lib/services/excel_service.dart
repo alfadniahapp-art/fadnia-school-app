@@ -34,15 +34,25 @@ class ExcelService {
     sheet.appendRow([
       TextCellValue('م'),
       TextCellValue('الاسم'),
+      TextCellValue('العمر'),
+      TextCellValue('الجنس'),
+      TextCellValue('رقم الجلوس'),
+      TextCellValue('ولي الأمر'),
       TextCellValue('الفصل'),
     ]);
 
     final students = data.studentsOf(cls);
     for (int i = 0; i < students.length; i++) {
+      final s = students[i];
+      final guardian = data.guardianById(s.guardianId);
       sheet.appendRow([
         IntCellValue(i + 1),
-        TextCellValue(students[i].name),
-        TextCellValue(students[i].classRoom),
+        TextCellValue(s.name),
+        TextCellValue(s.age),
+        TextCellValue(s.gender),
+        TextCellValue(s.seatNumber),
+        TextCellValue(guardian?.name ?? '-'),
+        TextCellValue(s.classRoom),
       ]);
     }
 
@@ -91,18 +101,56 @@ class ExcelService {
     sheet.appendRow([
       TextCellValue('م'),
       TextCellValue('الاسم'),
-      TextCellValue('المادة'),
+      TextCellValue('الدرجة'),
+      TextCellValue('الشهادة'),
+      TextCellValue('الهاتف'),
+      TextCellValue('المواد'),
     ]);
 
     for (int i = 0; i < data.teachers.length; i++) {
+      final t = data.teachers[i];
       sheet.appendRow([
         IntCellValue(i + 1),
-        TextCellValue(data.teachers[i].name),
-        TextCellValue(data.teachers[i].subject),
+        TextCellValue(t.name),
+        TextCellValue(t.degree),
+        TextCellValue(t.certificate),
+        TextCellValue(t.phone),
+        TextCellValue(t.subjects.join('، ')),
       ]);
     }
 
     await _saveAndShare(excel, 'المعلمون.xlsx');
+  }
+
+  static Future<void> exportGuardians(SchoolDataProvider data) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['أولياء الأمور'];
+    excel.setDefaultSheet('أولياء الأمور');
+
+    sheet.appendRow([
+      TextCellValue('م'),
+      TextCellValue('الاسم'),
+      TextCellValue('الصلة'),
+      TextCellValue('الهاتف الأساسي'),
+      TextCellValue('الهاتف الاحتياطي'),
+      TextCellValue('العنوان'),
+      TextCellValue('المهنة'),
+    ]);
+
+    for (int i = 0; i < data.guardians.length; i++) {
+      final g = data.guardians[i];
+      sheet.appendRow([
+        IntCellValue(i + 1),
+        TextCellValue(g.name),
+        TextCellValue(g.relation),
+        TextCellValue(g.phonePrimary),
+        TextCellValue(g.phoneSecondary),
+        TextCellValue(g.address),
+        TextCellValue(g.occupation),
+      ]);
+    }
+
+    await _saveAndShare(excel, 'أولياء_الأمور.xlsx');
   }
 
   static Future<void> _saveAndShare(Excel excel, String filename) async {
