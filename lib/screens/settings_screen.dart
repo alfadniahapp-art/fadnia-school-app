@@ -21,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _yearCtrl = TextEditingController();
   final _semCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController();
+  final _workDaysCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _yearCtrl.text = s.academicYear;
       _semCtrl.text = s.semester;
       _currencyCtrl.text = s.currencySymbol;
+      _workDaysCtrl.text = s.workDaysPerMonth.toString();
     });
   }
 
@@ -53,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              // ============ بيانات المدرسة ============
+              // ============ 🏫 بيانات المدرسة ============
               _section("🏫 بيانات المدرسة", s.primaryColor),
               const CustomLabel("اسم المدرسة:"),
               TextField(controller: _nameCtrl),
@@ -61,6 +63,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextField(controller: _yearCtrl),
               const CustomLabel("الفصل الدراسي:"),
               TextField(controller: _semCtrl),
+              const CustomLabel("أيام العمل في الشهر (للرواتب):"),
+              TextField(
+                controller: _workDaysCtrl,
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(hintText: "22 يوم افتراضياً"),
+              ),
               const SizedBox(height: 10),
               SuccessButton(
                 label: "حفظ بيانات المدرسة",
@@ -70,6 +79,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   d.saveData();
                   s.setYear(_yearCtrl.text);
                   s.setSemester(_semCtrl.text);
+                  final days = int.tryParse(_workDaysCtrl.text);
+                  if (days != null && days > 0) {
+                    s.setWorkDays(days);
+                  }
                   _snack(context, "تم الحفظ");
                 },
               ),
@@ -163,12 +176,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _templateOption(context, s, "صغيرة",
                   "جدول، معلمون، طلاب، درجات"),
               _templateOption(context, s, "متوسطة",
-                  "+ رسوم، أولياء أمور، غياب، تقارير"),
+                  "+ رسوم، أولياء أمور، غياب، موظفون، رواتب"),
               _templateOption(context, s, "كبيرة",
-                  "+ الإحصائيات، جدول المعلم، الشهادات"),
+                  "+ الإحصائيات، جدول المعلم، شهادات، خزينة"),
 
               // ============ 📦 الوحدات ============
               _section("📦 تفعيل/تعطيل الأقسام", s.primaryColor),
+              _subSection("🏫 أكاديمي", s.primaryColor),
               _moduleSwitch(s, 'schedule', 'جدول الحصص'),
               _moduleSwitch(s, 'teachers', 'المعلمون'),
               _moduleSwitch(s, 'subjects', 'المواد'),
@@ -177,11 +191,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _moduleSwitch(s, 'grades', 'الدرجات'),
               _moduleSwitch(s, 'attendance', 'الغياب'),
               _moduleSwitch(s, 'calendar', 'التقويم'),
-              _moduleSwitch(s, 'fees', 'الرسوم'),
+              _moduleSwitch(s, 'teacherDaily', 'جدول المعلم'),
+
+              _subSection("💰 مالية", s.primaryColor),
+              _moduleSwitch(s, 'fees', 'رسوم الطلاب'),
+              _moduleSwitch(s, 'employees', 'الموظفون'),
+              _moduleSwitch(s, 'payroll', 'كشف الرواتب'),
+              _moduleSwitch(s, 'finance', 'الخزينة العامة'),
+
+              _subSection("📊 تقارير", s.primaryColor),
               _moduleSwitch(s, 'certificates', 'الشهادات'),
               _moduleSwitch(s, 'reports', 'التقارير'),
               _moduleSwitch(s, 'stats', 'الإحصائيات'),
-              _moduleSwitch(s, 'teacherDaily', 'جدول المعلم'),
 
               // ============ 🔒 الأمان ============
               _section("🔒 الأمان", s.primaryColor),
@@ -246,8 +267,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
 
-              // ============ ⚠️ خطر ============
-              const SizedBox(height: 30),
+              // ============ ⚠️ منطقة الخطر ============
+              const SizedBox(height: 20),
               _section("⚠️ منطقة الخطر", Colors.red),
               SuccessButton(
                 label: "🗑️ حذف جميع البيانات",
@@ -270,7 +291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 30),
-              const Text("الإصدار 4.0.0",
+              const Text("الإصدار 5.0.0",
                   style: TextStyle(
                       color: Colors.white38,
                       fontFamily: 'Changa',
@@ -292,6 +313,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: TextStyle(
                 color: color,
                 fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Changa')),
+      ),
+    );
+  }
+
+  Widget _subSection(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 6),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Text(title,
+            style: TextStyle(
+                color: color.withOpacity(0.7),
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Changa')),
       ),
@@ -395,7 +431,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(desc,
                       style: const TextStyle(
                           color: Colors.white54,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontFamily: 'Changa')),
                 ],
               ),
