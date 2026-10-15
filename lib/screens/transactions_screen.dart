@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../models/school_data.dart';
 import '../models/settings.dart';
 import '../models/finance.dart';
 import '../theme/app_theme.dart';
+import '../utils/date_formatter.dart';
 import '../widgets/common_widgets.dart';
 import 'transaction_form_screen.dart';
 
@@ -45,8 +45,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final settings = context.watch<SettingsProvider>();
     final primary = settings.primaryColor;
     final currency = settings.currencySymbol;
+    final calType = settings.calendarType;
 
-    // فلترة
     var list = data.allTransactions.where((t) {
       if (_typeFilter != null && t.type != _typeFilter) return false;
       if (_accountFilter != null && t.accountId != _accountFilter) {
@@ -88,7 +88,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               color: AppColors.darkNavy.withOpacity(0.5),
               child: Column(
                 children: [
-                  // فلتر النوع
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -115,22 +114,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                 selectedColor: primary,
                                 backgroundColor: AppColors.navy,
                                 onSelected: (_) => setState(() =>
-                                    _accountFilter = _accountFilter == a.id
-                                        ? null
-                                        : a.id),
+                                    _accountFilter =
+                                        _accountFilter == a.id
+                                            ? null
+                                            : a.id),
                               ),
                             )),
                       ],
                     ),
                   ),
                   const SizedBox(height: 6),
-                  // فلتر التاريخ
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: _DateFilter.values
                           .map((f) => Padding(
-                                padding: const EdgeInsets.only(left: 6),
+                                padding:
+                                    const EdgeInsets.only(left: 6),
                                 child: ChoiceChip(
                                   label: Text(f.label,
                                       style: TextStyle(
@@ -142,22 +142,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   selected: _dateFilter == f,
                                   selectedColor: primary,
                                   backgroundColor: AppColors.navy,
-                                  onSelected: (_) =>
-                                      setState(() => _dateFilter = f),
+                                  onSelected: (_) => setState(
+                                      () => _dateFilter = f),
                                 ),
                               ))
                           .toList(),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // البحث
                   TextField(
                     onChanged: (v) => setState(() => _search = v),
                     decoration: InputDecoration(
                       hintText: "🔍 بحث...",
                       isDense: true,
-                      prefixIcon:
-                          Icon(Icons.search, color: primary, size: 20),
+                      prefixIcon: Icon(Icons.search,
+                          color: primary, size: 20),
                     ),
                   ),
                 ],
@@ -180,16 +179,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       "${receipts.toStringAsFixed(0)} $currency",
                       AppColors.green),
                   Container(
-                      width: 1,
-                      height: 30,
-                      color: AppColors.border),
+                      width: 1, height: 30, color: AppColors.border),
                   _sumItem("📤", "منصرفات",
                       "${payments.toStringAsFixed(0)} $currency",
                       AppColors.red),
                   Container(
-                      width: 1,
-                      height: 30,
-                      color: AppColors.border),
+                      width: 1, height: 30, color: AppColors.border),
                   _sumItem(
                       "📊",
                       "صافي",
@@ -208,7 +203,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long,
+                          const Icon(Icons.receipt_long,
                               size: 80, color: Colors.white24),
                           const SizedBox(height: 12),
                           const Text("لا توجد حركات",
@@ -228,8 +223,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       itemCount: list.length,
-                      itemBuilder: (_, i) =>
-                          _txCard(context, data, list[i], currency),
+                      itemBuilder: (_, i) => _txCard(
+                          context, data, list[i], currency, calType),
                     ),
             ),
           ],
@@ -293,8 +288,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   Widget _txCard(BuildContext context, SchoolDataProvider data,
-      FinanceTransaction t, String currency) {
-    final date = DateFormat('yyyy/MM/dd HH:mm').format(t.date);
+      FinanceTransaction t, String currency, CalendarType calType) {
+    // 🗓️ استخدام DateFormatter حسب نوع التقويم
+    final dateStr = DateFormatter.formatDateTime(t.date, calType);
     final account = data.accountById(t.accountId);
 
     return Container(
@@ -310,7 +306,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
-        onTap: () => _details(context, data, t, currency),
+        onTap: () => _details(context, data, t, currency, calType),
         leading: CircleAvatar(
           radius: 20,
           backgroundColor: t.type.color.withOpacity(0.2),
@@ -351,19 +347,29 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     color: Colors.white70,
                     fontFamily: 'Changa',
                     fontSize: 11)),
+            const SizedBox(height: 2),
+            // 🗓️ التاريخ
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.calendar_today,
+                const Icon(Icons.calendar_today,
                     size: 9, color: Colors.white38),
                 const SizedBox(width: 3),
-                Text(date,
-                    style: const TextStyle(
-                        color: Colors.white38,
-                        fontFamily: 'Changa',
-                        fontSize: 10)),
-                if (account != null) ...[
-                  const SizedBox(width: 6),
-                  Icon(Icons.account_balance_wallet,
+                Expanded(
+                  child: Text(dateStr,
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontFamily: 'Changa',
+                          fontSize: 10,
+                          height: 1.3)),
+                ),
+              ],
+            ),
+            if (account != null) ...[
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const Icon(Icons.account_balance_wallet,
                       size: 9, color: Colors.white38),
                   const SizedBox(width: 3),
                   Text(account.name,
@@ -372,8 +378,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           fontFamily: 'Changa',
                           fontSize: 10)),
                 ],
-              ],
-            ),
+              ),
+            ],
           ],
         ),
         trailing: Text(
@@ -389,8 +395,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _details(BuildContext context, SchoolDataProvider data,
-      FinanceTransaction t, String currency) {
-    final date = DateFormat('yyyy/MM/dd - HH:mm').format(t.date);
+      FinanceTransaction t, String currency, CalendarType calType) {
+    final dateStr = DateFormatter.formatDateTime(t.date, calType);
     final account = data.accountById(t.accountId);
 
     showModalBottomSheet(
@@ -431,7 +437,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             _row(Icons.category, "البند", t.categoryName),
             _row(Icons.person, "المستلم/الدافع",
                 t.party.isEmpty ? '-' : t.party),
-            _row(Icons.calendar_today, "التاريخ", date),
+            _row(Icons.calendar_today, "التاريخ", dateStr),
             _row(Icons.account_balance_wallet, "الحساب",
                 account?.name ?? '-'),
             _row(Icons.info_outline, "المصدر", t.source.label),
