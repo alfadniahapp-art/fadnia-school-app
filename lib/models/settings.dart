@@ -12,29 +12,35 @@ class SettingsProvider extends ChangeNotifier {
   String currencySymbol = "ج.س";
 
   // 🎨 الألوان
-  int primaryColorValue = 0xFFF1C40F;   // ذهبي
+  int primaryColorValue = 0xFFF1C40F;    // ذهبي
   int backgroundColorValue = 0xFF0B132B; // كحلي
 
   // 🏫 القالب
   String schoolTemplate = "كبيرة"; // صغيرة / متوسطة / كبيرة
 
+  // 📅 أيام العمل في الشهر
+  int workDaysPerMonth = 22;
+
   // 📦 الوحدات المفعّلة
   Map<String, bool> enabledModules = {
-    'schedule': true,      // جدول الحصص
-    'teachers': true,      // المعلمون
-    'subjects': true,      // المواد
-    'students': true,      // الطلاب
-    'guardians': true,     // أولياء الأمور
-    'grades': true,        // الدرجات
-    'attendance': true,    // الغياب
-    'calendar': false,     // التقويم
-    'fees': true,          // الرسوم
-    'certificates': true,  // الشهادات
-    'reports': true,       // التقارير
-    'stats': true,         // الإحصائيات
-    'teacherDaily': true,  // جدول المعلم
-    'finance': false,      // المالية
-    'payroll': false,      // الرواتب
+    // أكاديمي
+    'schedule': true,
+    'teachers': true,
+    'subjects': true,
+    'students': true,
+    'guardians': true,
+    'grades': true,
+    'attendance': true,
+    'calendar': false,
+    'fees': true,
+    'certificates': true,
+    'reports': true,
+    'stats': true,
+    'teacherDaily': true,
+    // 💰 مالية
+    'employees': true,      // الموظفون
+    'payroll': true,        // الرواتب
+    'finance': false,       // الخزينة العامة (سيُبنى لاحقاً)
   };
 
   Color get primaryColor => Color(primaryColorValue);
@@ -54,9 +60,17 @@ class SettingsProvider extends ChangeNotifier {
       backgroundColorValue =
           data['backgroundColorValue'] ?? backgroundColorValue;
       schoolTemplate = data['schoolTemplate'] ?? schoolTemplate;
+      workDaysPerMonth = data['workDaysPerMonth'] ?? workDaysPerMonth;
       final mods = data['enabledModules'];
       if (mods != null) {
-        enabledModules = Map<String, bool>.from(mods);
+        final loaded = Map<String, bool>.from(mods);
+        // دمج: إذا كانت هناك مفاتيح جديدة غير موجودة، نضيفها بقيمها الافتراضية
+        for (final key in enabledModules.keys) {
+          if (!loaded.containsKey(key)) {
+            loaded[key] = enabledModules[key]!;
+          }
+        }
+        enabledModules = loaded;
       }
     }
     notifyListeners();
@@ -74,6 +88,7 @@ class SettingsProvider extends ChangeNotifier {
       'primaryColorValue': primaryColorValue,
       'backgroundColorValue': backgroundColorValue,
       'schoolTemplate': schoolTemplate,
+      'workDaysPerMonth': workDaysPerMonth,
       'enabledModules': enabledModules,
     });
     notifyListeners();
@@ -120,6 +135,11 @@ class SettingsProvider extends ChangeNotifier {
     save();
   }
 
+  void setWorkDays(int days) {
+    workDaysPerMonth = days;
+    save();
+  }
+
   void setTemplate(String t) {
     schoolTemplate = t;
     applyTemplate(t);
@@ -143,8 +163,9 @@ class SettingsProvider extends ChangeNotifier {
         'reports': false,
         'stats': false,
         'teacherDaily': false,
-        'finance': false,
+        'employees': false,
         'payroll': false,
+        'finance': false,
       };
     } else if (t == 'متوسطة') {
       enabledModules = {
@@ -161,8 +182,9 @@ class SettingsProvider extends ChangeNotifier {
         'reports': true,
         'stats': true,
         'teacherDaily': true,
+        'employees': true,
+        'payroll': true,
         'finance': false,
-        'payroll': false,
       };
     } else {
       // كبيرة
@@ -180,8 +202,9 @@ class SettingsProvider extends ChangeNotifier {
         'reports': true,
         'stats': true,
         'teacherDaily': true,
-        'finance': true,
+        'employees': true,
         'payroll': true,
+        'finance': true,
       };
     }
     save();
