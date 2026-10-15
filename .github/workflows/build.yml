@@ -91,30 +91,26 @@ jobs:
           class MainActivity: FlutterActivity()
           EOF
 
-          # تعديل AndroidManifest.xml: اسم التطبيق العربي + ترميز UTF-8
-          MANIFEST="$GITHUB_WORKSPACE/android/app/src/main/AndroidManifest.xml"
+          # تعديل AndroidManifest.xml
+          cd $GITHUB_WORKSPACE
           python3 << 'PYEOF'
           import re
           path = "android/app/src/main/AndroidManifest.xml"
-          full_path = "$GITHUB_WORKSPACE/" + path
-          with open(full_path, 'r', encoding='utf-8') as f:
+          with open(path, 'r', encoding='utf-8') as f:
               content = f.read()
-          # استبدال android:label بـ الاسم العربي
           content = re.sub(r'android:label="[^"]*"', 'android:label="مدارس الفادنية شرق"', content)
-          # إضافة android:supportsRtl إن لم يكن موجوداً
           if 'android:supportsRtl' not in content:
               content = content.replace(
                   '<application',
                   '<application\n        android:supportsRtl="true"'
               )
-          with open(full_path, 'w', encoding='utf-8') as f:
+          with open(path, 'w', encoding='utf-8') as f:
               f.write(content)
           print("✅ تم تحديث AndroidManifest.xml")
           PYEOF
 
-          # عرض النتيجة للتأكد
-          echo "=== AndroidManifest.xml ==="
-          head -30 $GITHUB_WORKSPACE/android/app/src/main/AndroidManifest.xml
+          echo "=== AndroidManifest.xml (أول 30 سطر) ==="
+          head -30 android/app/src/main/AndroidManifest.xml
 
       - name: Update Gradle wrapper to 8.0
         run: |
