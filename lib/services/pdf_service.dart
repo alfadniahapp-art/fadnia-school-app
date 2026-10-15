@@ -2,6 +2,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/school_data.dart';
+import '../models/employee.dart';
 import '../models/payroll.dart';
 
 class PdfService {
