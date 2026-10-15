@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import 'employee.dart';
+import 'payroll.dart';
 
 class Guardian {
   final String id;
@@ -136,9 +138,13 @@ class SchoolDataProvider extends ChangeNotifier {
   List<Student> students = [];
   List<Guardian> guardians = [];
 
-  /// رسوم افتراضية لكل فصل
-  Map<String, double> feesByClass = {};
+  // 👥 الموظفون
+  List<Employee> employees = [];
 
+  // 📋 سجل الرواتب الشهرية
+  List<PayrollRecord> payrollRecords = [];
+
+  Map<String, double> feesByClass = {};
   Map<String, Map<String, Map<String, String>>> schedule = {};
   Map<String, List<String>> subjectsByClass = {};
   Map<String, Map<String, Map<String, double>>> grades = {};
@@ -168,6 +174,12 @@ class SchoolDataProvider extends ChangeNotifier {
           .toList();
       guardians = (data['guardians'] as List? ?? [])
           .map((e) => Guardian.fromJson(e))
+          .toList();
+      employees = (data['employees'] as List? ?? [])
+          .map((e) => Employee.fromJson(e))
+          .toList();
+      payrollRecords = (data['payrollRecords'] as List? ?? [])
+          .map((e) => PayrollRecord.fromJson(e))
           .toList();
       feesByClass = (data['feesByClass'] as Map?)?.map(
             (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
@@ -224,6 +236,8 @@ class SchoolDataProvider extends ChangeNotifier {
       'teachers': teachers.map((t) => t.toJson()).toList(),
       'students': students.map((s) => s.toJson()).toList(),
       'guardians': guardians.map((g) => g.toJson()).toList(),
+      'employees': employees.map((e) => e.toJson()).toList(),
+      'payrollRecords': payrollRecords.map((p) => p.toJson()).toList(),
       'feesByClass': feesByClass,
       'subjectsByClass': subjectsByClass,
       'schedule': schedule,
@@ -408,4 +422,127 @@ class SchoolDataProvider extends ChangeNotifier {
     saveData();
     notifyListeners();
   }
+
+  // ============ 👥 الموظفون ============
+  void addEmployee(Employee e) {
+    employees.add(e);
+    saveData();
+    notifyListeners();
+  }
+
+  void updateEmployee(int index, Employee e) {
+    employees[index] = e;
+    saveData();
+    notifyListeners();
+  }
+
+  void removeEmployee(int i) {
+    employees.removeAt(i);
+    saveData();
+    notifyListeners();
+  }
+
+  Employee? employeeById(String id) {
+    try {
+      return employees.firstWhere((e) => e.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Employee> employeesOfType(EmployeeType type) {
+    return employees.where((e) => e.type == type).toList();
+  }
+
+  /// إجمالي الرواتب الشهرية المتوقعة
+  double get totalMonthlySalaries =>
+      employees.fold(0.0, (sum, e) => sum + e.baseSalary);
+
+  // ============ 📋 سجل الرواتب ============
+  void addPayroll(PayrollRecord p) {
+    payrollRecords.add(p);
+    saveData();
+    notifyListeners();
+  }
+
+  void updatePayroll(PayrollRecord p) {
+    final i = payrollRecords.indexWhere((r) => r.id == p.id);
+    if (i != -1) {
+      payrollRecords[i] = p;
+      saveData();
+      notifyListeners();
+    }
+  }
+
+  void removePayroll(String id) {
+    payrollRecords.removeWhere((r) => r.id == id);
+    saveData();
+    notifyListeners();
+  }
+
+  /// كل سجلات شهر معين
+  List<PayrollRecord> payrollForMonth(int month, int year) {
+    return payrollRecords
+        .where((r) => r.month == month && r.year == year)
+        .toList();
+  }
+
+  /// ملخص شهر معين
+  PayrollSummary payrollSummary(int month, int year) {
+    return PayrollSummary(
+      month: month,
+      year: year,
+      records: payrollForMonth(month, year),
+    );
+  }
+
+  /// سجل موظف في شهر
+  PayrollRecord? payrollForEmployee(String employeeId, int month, int year) {
+    try {
+      return payrollRecords.firstWhere(
+        (r) =>
+            r.employeeId == employeeId &&
+            r.month == month &&
+            r.year == year,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// سجل موظف في كل الشهور
+  List<PayrollRecord> payrollHistoryFor(String employeeId) {
+    return payrollRecords
+        .where((r) => r.employeeId == employeeId)
+        .toList()
+      ..sort((a, b) {
+        if (a.year != b.year) return b.year.compareTo(a.year);
+        return b.month.compareTo(a.month);
+      });
+  }
+
+  /// كل الشهور المسجلة (مفردة)
+  List<String> get payrollMonths {
+    final set = <String>{};
+    for (final r in payrollRecords) {
+      set.add('${r.year}-${r.month.toString().padLeft(2, '0')}');
+    }
+    final list = set.toList()..sort();
+    return list.reversed.toList();
+  }
+
+  /// إجمالي مصروف الرواتب في شهر
+  double totalPayrollFor(int month, int year) {
+    return payrollForMonth(month, year)
+        .fold(0.0, (sum, r) => sum + r.netSalary);
+  }
+
+  /// إجمالي ما دُفع فعلاً في شهر
+  double totalPaidFor(int month, int year) {
+    return payrollForMonth(month, year)
+        .fold(0.0, (sum, r) => sum + r.paidAmount);
+  }
+
+  /// إجمالي المصروفات الكلية (رواتب + خصومات)
+  double get totalMonthlyExpenses => totalMonthlySalaries;
 }
