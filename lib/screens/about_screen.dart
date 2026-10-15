@@ -5,14 +5,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/school_data.dart';
 import '../models/settings.dart';
 import '../theme/app_theme.dart';
+import 'themes_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   static const String _developerName = "Abu Almulla";
-  static const String _phone = "+249922008009";
   static const String _phoneDisplay = "+249 92 200 8009";
-  static const String _appVersion = "6.0.0";
+  static const String _phoneClean = "249922008009";
+  static const String _appVersion = "6.1.0";
 
   @override
   Widget build(BuildContext context) {
@@ -102,8 +103,22 @@ class AboutScreen extends StatelessWidget {
                 icon: Icons.school,
                 title: "المدرسة",
                 value: data.name,
-                subtitle:
-                    "المرحلة ${data.stage} - ${data.type}",
+                subtitle: "المرحلة ${data.stage} - ${data.type}",
+              ),
+
+              const SizedBox(height: 15),
+
+              // ============ 🎨 زر الثيمات ============
+              _actionCard(
+                icon: Icons.palette,
+                title: "الثيمات والألوان",
+                subtitle: "تخصيص المظهر بشكل كامل",
+                color: primary,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ThemesScreen()),
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -170,7 +185,7 @@ class AboutScreen extends StatelessWidget {
                     const Divider(color: AppColors.border),
                     const SizedBox(height: 10),
 
-                    // رقم الهاتف
+                    // 📞 رقم الهاتف — بإتجاه LTR
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -184,13 +199,19 @@ class AboutScreen extends StatelessWidget {
                               color: primary, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(_phoneDisplay,
+                            child: Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Text(
+                                _phoneDisplay,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontFamily: 'Changa',
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
-                                    letterSpacing: 1)),
+                                    letterSpacing: 1),
+                              ),
+                            ),
                           ),
                           IconButton(
                             icon: Icon(Icons.copy,
@@ -198,9 +219,11 @@ class AboutScreen extends StatelessWidget {
                             tooltip: "نسخ الرقم",
                             onPressed: () async {
                               await Clipboard.setData(
-                                  ClipboardData(text: _phone));
+                                  const ClipboardData(
+                                      text: _phoneDisplay));
                               if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(
                                 const SnackBar(
                                   content: Text("تم نسخ الرقم"),
                                   backgroundColor: AppColors.green,
@@ -223,7 +246,7 @@ class AboutScreen extends StatelessWidget {
                             label: "اتصال",
                             color: AppColors.green,
                             onTap: () => _launch(
-                                context, "tel:$_phone"),
+                                context, "tel:$_phoneClean"),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -235,9 +258,8 @@ class AboutScreen extends StatelessWidget {
                             onTap: () {
                               final msg = Uri.encodeComponent(
                                   "السلام عليكم، أتواصل بخصوص تطبيق Mulla لإدارة المدارس");
-                              _launch(
-                                  context,
-                                  "https://wa.me/$_phone?text=$msg");
+                              _launch(context,
+                                  "https://wa.me/$_phoneClean?text=$msg");
                             },
                           ),
                         ),
@@ -299,7 +321,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.copyright,
+                    const Icon(Icons.copyright,
                         color: Colors.white38, size: 20),
                     const SizedBox(height: 6),
                     const Text("جميع الحقوق محفوظة",
@@ -320,7 +342,6 @@ class AboutScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // ============ زر النسخ الاحتياطي/العودة ============
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -387,6 +408,68 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _actionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                color.withOpacity(0.2),
+                AppColors.darkNavy,
+              ],
+            ),
+            border: Border.all(color: color, width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: TextStyle(
+                            color: color,
+                            fontFamily: 'Changa',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Changa',
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: color, size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
