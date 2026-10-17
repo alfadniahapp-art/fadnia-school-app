@@ -51,12 +51,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              // ============ الإحصائيات ============
               _statsBar(data, primary),
-
               const SizedBox(height: 10),
-
-              // ============ البحث ============
               TextField(
                 onChanged: (v) => setState(() => _search = v),
                 decoration: InputDecoration(
@@ -66,8 +62,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // ============ القائمة ============
               Expanded(
                 child: _showAll
                     ? _buildFlatList(context, data, settings)
@@ -80,9 +74,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  // ============================================================
-  //  📊 إحصائيات سريعة
-  // ============================================================
   Widget _statsBar(SchoolDataProvider data, Color primary) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -106,7 +97,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
             child: _statItem(
               icon: Icons.class_,
               label: "فصول فيها طلاب",
-              value: "${data.classesWithStudents.length}/${data.classes.length}",
+              value:
+                  "${data.classesWithStudents.length}/${data.classes.length}",
               color: AppColors.blue,
             ),
           ),
@@ -220,8 +212,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                             fontFamily: 'Changa',
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
-                    Text(
-                        "${allClassStudents.length} طالب",
+                    Text("${allClassStudents.length} طالب",
                         style: const TextStyle(
                             color: Colors.white54,
                             fontFamily: 'Changa',
@@ -256,9 +247,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  // ============================================================
-  //  📋 عرض مسطّح (الكل في قائمة واحدة)
-  // ============================================================
   Widget _buildFlatList(
       BuildContext context, SchoolDataProvider data, SettingsProvider s) {
     var list = data.students;
@@ -274,7 +262,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
       );
     }
 
-    // ترتيب حسب الفصل ثم الاسم
     list = [...list]
       ..sort((a, b) {
         final cmp = a.classRoom.compareTo(b.classRoom);
@@ -292,9 +279,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  // ============================================================
-  //  👤 بطاقة الطالب
-  // ============================================================
   Widget _studentCard(BuildContext context, SchoolDataProvider data,
       SettingsProvider s, Student st, int index, int displayNum) {
     final guardian = data.guardianById(st.guardianId);
@@ -330,7 +314,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         fontSize: 11)),
                 if (st.age.isNotEmpty) ...[
                   const SizedBox(width: 8),
-                  Icon(Icons.cake,
+                  const Icon(Icons.cake,
                       size: 11, color: Colors.white54),
                   const SizedBox(width: 3),
                   Text("${st.age} سنة",
@@ -427,12 +411,11 @@ class _StudentsScreenState extends State<StudentsScreen> {
   }
 
   // ============================================================
-  //  ➕ إضافة / تعديل
+  //  ➕ إضافة / تعديل — مع حقل ولي الأمر المُحسّن
   // ============================================================
   void _dialog(BuildContext context, SchoolDataProvider data,
       {Student? editing, int? index}) {
-    final nameCtrl =
-        TextEditingController(text: editing?.name ?? '');
+    final nameCtrl = TextEditingController(text: editing?.name ?? '');
     final ageCtrl = TextEditingController(text: editing?.age ?? '');
     String cls = editing?.classRoom ?? data.classes.first;
     String? guardianId = editing?.guardianId;
@@ -450,7 +433,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // الصورة
                 GestureDetector(
                   onTap: () async {
                     final picker = ImagePicker();
@@ -472,8 +454,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // الاسم
                 TextField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(
@@ -481,8 +461,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       prefixIcon: Icon(Icons.person)),
                 ),
                 const SizedBox(height: 8),
-
-                // العمر
                 TextField(
                   controller: ageCtrl,
                   keyboardType: TextInputType.number,
@@ -491,8 +469,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       prefixIcon: Icon(Icons.cake)),
                 ),
                 const SizedBox(height: 8),
-
-                // الفصل
                 DropdownButtonFormField<String>(
                   value: cls,
                   isExpanded: true,
@@ -505,23 +481,108 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       .toList(),
                   onChanged: (v) => setD(() => cls = v!),
                 ),
-                const SizedBox(height: 8),
 
-                // ولي الأمر
-                DropdownButtonFormField<String>(
-                  value: guardianId,
-                  isExpanded: true,
-                  dropdownColor: AppColors.darkNavy,
-                  decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.family_restroom)),
-                  hint: const Text("ولي الأمر (اختياري)"),
-                  items: data.guardians
-                      .map((g) => DropdownMenuItem(
-                          value: g.id,
-                          child: Text("${g.name} (${g.relation})")))
-                      .toList(),
-                  onChanged: (v) => setD(() => guardianId = v),
+                const SizedBox(height: 12),
+                const Divider(color: AppColors.border),
+                const SizedBox(height: 6),
+
+                // ============ ولي الأمر ============
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text("👨‍👦 ولي الأمر",
+                          style: TextStyle(
+                              color: AppColors.gold,
+                              fontFamily: 'Changa',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13)),
+                    ),
+                    TextButton.icon(
+                      onPressed: () async {
+                        // ➕ إضافة ولي أمر جديد ثم ربطه
+                        await _quickAddGuardian(
+                            context, data, (newId) {
+                          setD(() => guardianId = newId);
+                        });
+                      },
+                      icon: const Icon(Icons.add,
+                          color: AppColors.green, size: 18),
+                      label: const Text("جديد",
+                          style: TextStyle(
+                              color: AppColors.green,
+                              fontFamily: 'Changa',
+                              fontSize: 12)),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 6),
+
+                if (data.guardians.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.15),
+                      border: Border.all(color: Colors.orange),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Colors.orange, size: 18),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                              "لا يوجد أولياء أمور. اضغط «جديد» للإضافة.",
+                              style: TextStyle(
+                                  color: Colors.orange,
+                                  fontFamily: 'Changa',
+                                  fontSize: 11)),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  DropdownButtonFormField<String>(
+                    value: guardianId,
+                    isExpanded: true,
+                    dropdownColor: AppColors.darkNavy,
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.family_restroom)),
+                    hint: const Text("اختر ولي الأمر (اختياري)"),
+                    items: [
+                      // خيار "لا يوجد"
+                      const DropdownMenuItem<String>(
+                        value: '__none__',
+                        child: Text("— لا يوجد —",
+                            style: TextStyle(
+                                color: Colors.white54,
+                                fontFamily: 'Changa',
+                                fontStyle: FontStyle.italic)),
+                      ),
+                      // قائمة أولياء الأمور
+                      ...data.guardians.map((g) {
+                        final phone = g.phonePrimary.isNotEmpty
+                            ? ' • ${g.phonePrimary}'
+                            : '';
+                        return DropdownMenuItem(
+                          value: g.id,
+                          child: Text(
+                            "${g.name} (${g.relation})$phone",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Changa',
+                                fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }),
+                    ],
+                    onChanged: (v) {
+                      setD(() {
+                        guardianId = v == '__none__' ? null : v;
+                      });
+                    },
+                  ),
               ],
             ),
           ),
@@ -557,6 +618,107 @@ class _StudentsScreenState extends State<StudentsScreen> {
   }
 
   // ============================================================
+  //  ➕ إضافة ولي أمر جديد (من نافذة الطالب)
+  // ============================================================
+  Future<void> _quickAddGuardian(BuildContext context,
+      SchoolDataProvider data, Function(String) onCreated) async {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final phone2Ctrl = TextEditingController();
+    String relation = 'أب';
+
+    final created = await showDialog<String>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          backgroundColor: AppColors.darkNavy,
+          title: const Text("إضافة ولي أمر جديد",
+              style: TextStyle(
+                  color: AppColors.gold, fontFamily: 'Changa')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                      hintText: "اسم ولي الأمر",
+                      prefixIcon: Icon(Icons.person)),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: relation,
+                  isExpanded: true,
+                  dropdownColor: AppColors.darkNavy,
+                  decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.link)),
+                  items: const [
+                    DropdownMenuItem(value: 'أب', child: Text("أب")),
+                    DropdownMenuItem(value: 'أم', child: Text("أم")),
+                    DropdownMenuItem(value: 'أخ', child: Text("أخ")),
+                    DropdownMenuItem(value: 'أخت', child: Text("أخت")),
+                    DropdownMenuItem(value: 'جد', child: Text("جد")),
+                    DropdownMenuItem(value: 'جدة', child: Text("جدة")),
+                    DropdownMenuItem(value: 'عم', child: Text("عم")),
+                    DropdownMenuItem(value: 'خال', child: Text("خال")),
+                    DropdownMenuItem(value: 'وصي', child: Text("وصي")),
+                  ],
+                  onChanged: (v) => setD(() => relation = v!),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                      hintText: "📞 الرقم الأساسي",
+                      prefixIcon: Icon(Icons.phone)),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phone2Ctrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                      hintText: "📞 الرقم الاحتياطي",
+                      prefixIcon: Icon(Icons.phone)),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("إلغاء"),
+            ),
+            TextButton(
+              onPressed: () {
+                if (nameCtrl.text.trim().isEmpty) return;
+                final id = DateTime.now()
+                    .millisecondsSinceEpoch
+                    .toString();
+                data.addGuardian(Guardian(
+                  id: id,
+                  name: nameCtrl.text.trim(),
+                  relation: relation,
+                  phonePrimary: phoneCtrl.text.trim(),
+                  phoneSecondary: phone2Ctrl.text.trim(),
+                ));
+                Navigator.pop(ctx, id);
+              },
+              child: const Text("إضافة",
+                  style: TextStyle(color: AppColors.gold)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (created != null) {
+      onCreated(created);
+    }
+  }
+
+  // ============================================================
   //  📋 التفاصيل
   // ============================================================
   void _details(BuildContext context, SchoolDataProvider data,
@@ -588,10 +750,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   style: const TextStyle(
                       color: Colors.white70, fontFamily: 'Changa')),
               const SizedBox(height: 10),
-
               if (st.age.isNotEmpty)
                 _chip("العمر: ${st.age} سنة", AppColors.blue),
-
               if (guardian != null) ...[
                 const Divider(color: AppColors.gold),
                 ListTile(
@@ -608,7 +768,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                           fontSize: 12)),
                 ),
               ],
-
               const Divider(color: AppColors.gold),
               if (grades.isEmpty)
                 const Padding(
@@ -652,9 +811,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  // ============================================================
-  //  🗑️ حذف
-  // ============================================================
   void _confirmDelete(BuildContext context, SchoolDataProvider data,
       Student st, int idx) {
     showDialog(
