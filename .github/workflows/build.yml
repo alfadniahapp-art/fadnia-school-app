@@ -25,6 +25,12 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Run update scripts
+        run: |
+          python3 scripts/update_1_defaults.py || echo "⚠️ script 1 failed"
+          python3 scripts/update_2_settings.py || echo "⚠️ script 2 failed"
+          python3 scripts/update_3_screens.py || echo "⚠️ script 3 failed"
+
       - name: Generate full Flutter Android project
         run: |
           cd /tmp
@@ -91,7 +97,6 @@ jobs:
           class MainActivity: FlutterActivity()
           EOF
 
-          # تعديل AndroidManifest.xml
           cd $GITHUB_WORKSPACE
           python3 << 'PYEOF'
           import re
@@ -106,11 +111,8 @@ jobs:
               )
           with open(path, 'w', encoding='utf-8') as f:
               f.write(content)
-          print("✅ تم تحديث AndroidManifest.xml")
+          print("✅ AndroidManifest محدث")
           PYEOF
-
-          echo "=== AndroidManifest.xml (أول 30 سطر) ==="
-          head -30 android/app/src/main/AndroidManifest.xml
 
       - name: Update Gradle wrapper to 8.0
         run: |
