@@ -4,6 +4,7 @@ import '../models/school_data.dart';
 import '../models/settings.dart';
 import '../models/employee.dart';
 import '../models/payroll.dart';
+import '../models/defaults.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/common_widgets.dart';
@@ -25,7 +26,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
     final settings = context.watch<SettingsProvider>();
     final primary = settings.primaryColor;
     final currency = settings.currencySymbol;
-    final calType = settings.calendarType;
 
     final records = data.payrollForMonth(_month, _year);
     final summary = data.payrollSummary(_month, _year);
@@ -57,17 +57,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              // ============ اختيار الشهر والسنة ============
               _monthYearSelector(settings, primary),
-
               const SizedBox(height: 12),
-
-              // ============ ملخص الشهر ============
               _summaryBox(summary, primary, currency),
-
               const SizedBox(height: 12),
-
-              // ============ إجراءات سريعة ============
               Row(
                 children: [
                   Expanded(
@@ -96,8 +89,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // ============ القائمة ============
               Expanded(
                 child: records.isEmpty
                     ? Center(
@@ -127,8 +118,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                     : ListView.builder(
                         itemCount: records.length,
                         itemBuilder: (_, i) => _payrollCard(
-                            context, data, settings, records[i], currency,
-                            calType),
+                            context, data, settings, records[i], currency),
                       ),
               ),
             ],
@@ -139,12 +129,11 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   // ============================================================
-  //  📅 اختيار الشهر والسنة — حسب نوع التقويم
+  //  📅 اختيار الشهر والسنة
   // ============================================================
   Widget _monthYearSelector(SettingsProvider s, Color primary) {
     final calType = s.calendarType;
     final hijriMonth = DateFormatter.hijriMonths[_month - 1];
-    // تقدير تقريبي للسنة الميلادية (1446 هـ ≈ 2024 م)
     final gregYear = _year - 579;
     final gregMonth = DateFormatter.gregorianMonthName(_month);
 
@@ -164,12 +153,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   value: _month,
                   isExpanded: true,
                   dropdownColor: AppColors.darkNavy,
-                  decoration: InputDecoration(
-                    labelText: calType == CalendarType.gregorian
-                        ? 'الشهر (ميلادي)'
-                        : 'الشهر',
-                    isDense: true,
-                  ),
+                  decoration: const InputDecoration(
+                      labelText: 'الشهر', isDense: true),
                   items: List.generate(12, (i) {
                     final m = i + 1;
                     final label = calType == CalendarType.gregorian
@@ -205,11 +190,10 @@ class _PayrollScreenState extends State<PayrollScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // 📅 عرض الفترة حسب النوع
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-                vertical: 6, horizontal: 10),
+            padding:
+                const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
             decoration: BoxDecoration(
               color: primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
@@ -257,7 +241,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
     );
   }
 
-  Widget _summaryBox(PayrollSummary s, Color primary, String currency) {
+  Widget _summaryBox(
+      PayrollSummary s, Color primary, String currency) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -275,8 +260,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   "${s.totalNetSalary.toStringAsFixed(0)}",
                   AppColors.blue),
               _sItem("✅", "مدفوع",
-                  "${s.totalPaid.toStringAsFixed(0)}",
-                  AppColors.green),
+                  "${s.totalPaid.toStringAsFixed(0)}", AppColors.green),
               _sItem("⏳", "متبقي",
                   "${s.totalRemaining.toStringAsFixed(0)}",
                   AppColors.orange),
@@ -321,8 +305,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   Widget _payrollCard(BuildContext context, SchoolDataProvider data,
-      SettingsProvider settings, PayrollRecord r, String currency,
-      CalendarType calType) {
+      SettingsProvider settings, PayrollRecord r, String currency) {
     final primary = settings.primaryColor;
     return Card(
       color: AppColors.darkNavy,
@@ -364,7 +347,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
                 [
                   if (r.incomes.isNotEmpty) "🎁 ${r.incomes.length}",
                   if (r.absenceDays > 0) "🚫 ${r.absenceDays}",
-                  if (r.deductions.isNotEmpty) "➖ ${r.deductions.length}",
+                  if (r.deductions.isNotEmpty)
+                    "➖ ${r.deductions.length}",
                 ].join(" • "),
                 style: const TextStyle(
                     color: Colors.white38,
@@ -393,8 +377,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
   // ============================================================
   //  🔄 توليد كل الرواتب
   // ============================================================
-  void _generateAll(BuildContext context, SchoolDataProvider data,
-      String currency) {
+  void _generateAll(
+      BuildContext context, SchoolDataProvider data, String currency) {
     if (data.employees.isEmpty) {
       _snack(context, "أضف موظفين أولاً", Colors.orange);
       return;
@@ -507,7 +491,6 @@ class _PayrollScreenState extends State<PayrollScreen> {
                     ),
                     const Divider(color: AppColors.gold),
                     const SizedBox(height: 6),
-
                     Row(
                       children: [
                         const Expanded(
@@ -572,8 +555,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                    "${item.displayName}${item.note.isNotEmpty ? ' (${item.note})' : ''}",
+                                child: Text(item.displayName,
                                     style: const TextStyle(
                                         color: Colors.white70,
                                         fontFamily: 'Changa',
@@ -646,8 +628,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                    "${item.displayName}${item.note.isNotEmpty ? ' (${item.note})' : ''}",
+                                child: Text(item.displayName,
                                     style: const TextStyle(
                                         color: Colors.white70,
                                         fontFamily: 'Changa',
@@ -911,20 +892,20 @@ class _PayrollScreenState extends State<PayrollScreen> {
   }
 
   // ============================================================
-  //  ➕ نافذة إضافة بند مالي
+  //  ➕ نافذة إضافة بند مالي (يقرأ من DefaultsProvider)
   // ============================================================
   void _addPayItemDialog(BuildContext context, bool isIncome,
       String currency, Function(PayItem) onAdd) {
+    final defaults = context.read<DefaultsProvider>();
+    final names = isIncome ? defaults.incomes : defaults.deductions;
+
+    String? selectedName =
+        names.isNotEmpty ? names.first : null;
     PayItemType type =
         isIncome ? PayItemType.incentive : PayItemType.absence;
     final customCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
-
-    final incomeTypes =
-        PayItemType.values.where((t) => t.isIncome).toList();
-    final dedTypes =
-        PayItemType.values.where((t) => t.isDeduction).toList();
 
     showDialog(
       context: context,
@@ -938,22 +919,37 @@ class _PayrollScreenState extends State<PayrollScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<PayItemType>(
-                  value: type,
+                // البند — من القائمة الديناميكية
+                DropdownButtonFormField<String>(
+                  value: selectedName,
                   isExpanded: true,
                   dropdownColor: AppColors.darkNavy,
-                  items: (isIncome ? incomeTypes : dedTypes)
-                      .map((t) => DropdownMenuItem(
-                          value: t, child: Text(t.label)))
-                      .toList(),
-                  onChanged: (v) => setD(() => type = v!),
+                  decoration: const InputDecoration(
+                      labelText: "البند", isDense: true),
+                  items: [
+                    ...names.map((n) => DropdownMenuItem(
+                        value: n,
+                        child: Text(n,
+                            style: TextStyle(
+                                color: isIncome
+                                    ? AppColors.green
+                                    : Colors.redAccent)))),
+                    const DropdownMenuItem(
+                      value: '__custom__',
+                      child: Text("📝 مخصص...",
+                          style: TextStyle(
+                              color: Colors.white70,
+                              fontStyle: FontStyle.italic)),
+                    ),
+                  ],
+                  onChanged: (v) => setD(() => selectedName = v),
                 ),
-                if (type == PayItemType.custom) ...[
+                if (selectedName == '__custom__') ...[
                   const SizedBox(height: 8),
                   TextField(
                     controller: customCtrl,
-                    decoration:
-                        const InputDecoration(hintText: "اسم البند"),
+                    decoration: const InputDecoration(
+                        hintText: "اسم بند مخصص"),
                   ),
                 ],
                 const SizedBox(height: 8),
@@ -981,12 +977,22 @@ class _PayrollScreenState extends State<PayrollScreen> {
               onPressed: () {
                 final amount = double.tryParse(amountCtrl.text) ?? 0;
                 if (amount <= 0) return;
+
+                String finalName;
+                if (selectedName == '__custom__') {
+                  if (customCtrl.text.trim().isEmpty) return;
+                  finalName = customCtrl.text.trim();
+                } else {
+                  if (selectedName == null) return;
+                  finalName = selectedName!;
+                }
+
                 onAdd(PayItem(
                   id: DateTime.now()
                       .millisecondsSinceEpoch
                       .toString(),
                   type: type,
-                  customName: customCtrl.text.trim(),
+                  customName: finalName,
                   amount: amount,
                   note: noteCtrl.text.trim(),
                 ));
