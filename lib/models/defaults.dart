@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-// ============================================================
-//  📦 البيانات الافتراضية القابلة للتعديل
-// ============================================================
 class AppDefaults {
   static const List<String> defaultQuickSubjects = [
     'لغة عربية',
@@ -80,9 +77,6 @@ class AppDefaults {
   ];
 }
 
-// ============================================================
-//  🔄 مزوّد البيانات الافتراضية (قابل للتعديل + حفظ دائم)
-// ============================================================
 class DefaultsProvider extends ChangeNotifier {
   static const String _storageKey = 'mulla_defaults_v1';
 
@@ -93,7 +87,6 @@ class DefaultsProvider extends ChangeNotifier {
   List<String> receipts = [...AppDefaults.defaultReceipts];
   List<String> payments = [...AppDefaults.defaultPayments];
 
-  /// 💾 تحميل البيانات المحفوظة
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -117,7 +110,6 @@ class DefaultsProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// 💾 حفظ البيانات
   Future<void> save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
