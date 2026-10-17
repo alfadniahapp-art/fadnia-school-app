@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/school_data.dart';
 import '../models/settings.dart';
+import '../models/defaults.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 
@@ -15,33 +16,14 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   String? _cls;
   final _subjCtrl = TextEditingController();
 
-  static const _quickSubjects = [
-    'لغة عربية',
-    'لغة عربية - قواعد',
-    'لغة عربية - أدب',
-    'لغة عربية - نصوص',
-    'لغة عربية - إملاء',
-    'رياضيات',
-    'علوم',
-    'أحياء',
-    'فيزياء',
-    'كيمياء',
-    'تاريخ',
-    'جغرافيا',
-    'تربية إسلامية',
-    'تربية وطنية',
-    'لغة إنجليزية',
-    'حاسوب',
-    'تربية فنية',
-    'تربية بدنية',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final data = context.watch<SchoolDataProvider>();
     final settings = context.watch<SettingsProvider>();
+    final defaults = context.watch<DefaultsProvider>();
     _cls ??= data.classes.first;
     final subjects = data.subjectsOf(_cls!);
+    final quickSubjects = defaults.quickSubjects;
 
     return Scaffold(
       appBar: AppBar(
@@ -69,8 +51,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 onChanged: (v) => setState(() => _cls = v),
               ),
               const SizedBox(height: 12),
-
-              // ============ إضافة مادة ============
               Row(children: [
                 Expanded(
                   child: TextField(
@@ -97,10 +77,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                       color: settings.primaryColor, size: 28),
                 ),
               ]),
-
               const SizedBox(height: 15),
-
-              // ============ المواد السريعة ============
               if (subjects.isEmpty)
                 Align(
                   alignment: Alignment.centerRight,
@@ -116,7 +93,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: _quickSubjects
+                        children: quickSubjects
                             .map((s) => ActionChip(
                                   label: Text(s,
                                       style: TextStyle(
@@ -136,10 +113,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     ],
                   ),
                 ),
-
               const SizedBox(height: 15),
-
-              // ============ عدد المواد ============
               if (subjects.isNotEmpty)
                 Align(
                   alignment: Alignment.centerRight,
@@ -153,8 +127,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                             fontWeight: FontWeight.bold)),
                   ),
                 ),
-
-              // ============ قائمة المواد ============
               Expanded(
                 child: subjects.isEmpty
                     ? const Center(
@@ -167,8 +139,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                         itemCount: subjects.length,
                         itemBuilder: (_, i) {
                           final s = subjects[i];
-                          final teachers =
-                              data.teachersForSubject(s);
+                          final teachers = data.teachersForSubject(s);
                           return Card(
                             color: AppColors.darkNavy,
                             margin: const EdgeInsets.only(bottom: 8),
@@ -205,8 +176,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete,
                                     color: Colors.redAccent),
-                                onPressed: () =>
-                                    _confirmDelete(context, data, s),
+                                onPressed: () => _confirmDelete(
+                                    context, data, s),
                               ),
                             ),
                           );
