@@ -19,6 +19,7 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
   Widget build(BuildContext context) {
     final data = context.watch<SchoolDataProvider>();
     final settings = context.watch<SettingsProvider>();
+    final primary = settings.primaryColor;
 
     final filtered = data.guardians.where((g) {
       if (_search.isEmpty) return true;
@@ -32,13 +33,12 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
       appBar: AppBar(
         backgroundColor: settings.backgroundColor,
         title: Text("أولياء الأمور",
-            style: TextStyle(
-                color: settings.primaryColor, fontFamily: 'Changa')),
-        iconTheme: IconThemeData(color: settings.primaryColor),
+            style: TextStyle(color: primary, fontFamily: 'Changa')),
+        iconTheme: IconThemeData(color: primary),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: settings.primaryColor,
-        onPressed: () => _dialog(context, data),
+        backgroundColor: primary,
+        onPressed: () => _guardianDialog(context, data),
         child: const Icon(Icons.add, color: Colors.black),
       ),
       body: Container(
@@ -47,13 +47,12 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
-              // 🔍 البحث
+              // 🔍 بحث
               TextField(
                 onChanged: (v) => setState(() => _search = v),
                 decoration: InputDecoration(
                   hintText: "🔍 ابحث بالاسم أو رقم الهاتف",
-                  prefixIcon: Icon(Icons.search,
-                      color: settings.primaryColor),
+                  prefixIcon: Icon(Icons.search, color: primary),
                 ),
               ),
               const SizedBox(height: 12),
@@ -84,16 +83,14 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
                                   color: AppColors.border),
                             ),
                             child: ListTile(
-                              onTap: () =>
-                                  _details(context, data, g, children),
+                              onTap: () => _details(
+                                  context, data, g, children),
                               leading: CircleAvatar(
                                 backgroundColor: AppColors.navy,
                                 child: Text(
-                                  g.name.isNotEmpty
-                                      ? g.name[0]
-                                      : '?',
+                                  g.name.isNotEmpty ? g.name[0] : '?',
                                   style: TextStyle(
-                                      color: settings.primaryColor,
+                                      color: primary,
                                       fontFamily: 'Changa',
                                       fontWeight: FontWeight.bold),
                                 ),
@@ -104,7 +101,8 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
                                       fontFamily: 'Changa',
                                       fontWeight: FontWeight.bold)),
                               subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text("🔗 ${g.relation}",
                                       style: const TextStyle(
@@ -121,18 +119,19 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
                                     Text(
                                         "👥 ${children.length} أبناء مسجلون",
                                         style: TextStyle(
-                                            color: settings.primaryColor,
+                                            color: primary,
                                             fontFamily: 'Changa',
                                             fontSize: 11)),
                                 ],
                               ),
                               trailing: PopupMenuButton<String>(
                                 icon: Icon(Icons.more_vert,
-                                    color: settings.primaryColor),
+                                    color: primary),
                                 color: AppColors.darkNavy,
                                 onSelected: (v) {
                                   if (v == 'edit') {
-                                    _dialog(context, data, editing: g);
+                                    _guardianDialog(context, data,
+                                        editing: g);
                                   } else if (v == 'delete') {
                                     _confirmDelete(context, data, g);
                                   }
@@ -165,7 +164,7 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
   }
 
   // ============ نافذة الإضافة/التعديل ============
-  void _dialog(BuildContext context, SchoolDataProvider data,
+  void _guardianDialog(BuildContext context, SchoolDataProvider data,
       {Guardian? editing}) {
     final nameCtrl = TextEditingController(text: editing?.name ?? '');
     final p1Ctrl = TextEditingController(text: editing?.phonePrimary ?? '');
@@ -175,6 +174,14 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
     final notesCtrl = TextEditingController(text: editing?.notes ?? '');
     String relation = editing?.relation ?? 'أب';
 
+    // معرفة الطلاب المختارين حالياً لهذا الوالد
+    final selectedStudents = editing == null
+        ? <String>{}
+        : data.studentsOfGuardian(editing.id).map((s) => s.name).toSet();
+
+    // تجميع الطلاب حسب الفصل
+    final studentsByClass = data.studentsPerClass;
+
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -183,67 +190,152 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
           title: Text(editing == null ? "إضافة ولي أمر" : "تعديل ولي الأمر",
               style: const TextStyle(
                   color: AppColors.gold, fontFamily: 'Changa')),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration:
-                      const InputDecoration(hintText: "اسم ولي الأمر"),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: relation,
-                  isExpanded: true,
-                  dropdownColor: AppColors.darkNavy,
-                  items: const [
-                    DropdownMenuItem(value: 'أب', child: Text("أب")),
-                    DropdownMenuItem(value: 'أم', child: Text("أم")),
-                    DropdownMenuItem(value: 'أخ', child: Text("أخ")),
-                    DropdownMenuItem(value: 'أخت', child: Text("أخت")),
-                    DropdownMenuItem(value: 'جد', child: Text("جد")),
-                    DropdownMenuItem(value: 'جدة', child: Text("جدة")),
-                    DropdownMenuItem(value: 'عم', child: Text("عم")),
-                    DropdownMenuItem(value: 'خال', child: Text("خال")),
-                    DropdownMenuItem(value: 'وصي', child: Text("وصي")),
-                  ],
-                  onChanged: (v) => setD(() => relation = v!),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: p1Ctrl,
-                  keyboardType: TextInputType.phone,
-                  decoration:
-                      const InputDecoration(hintText: "📞 الرقم الأساسي"),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: p2Ctrl,
-                  keyboardType: TextInputType.phone,
-                  decoration:
-                      const InputDecoration(hintText: "📞 الرقم الاحتياطي"),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: addrCtrl,
-                  decoration:
-                      const InputDecoration(hintText: "🏠 العنوان (اختياري)"),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: occCtrl,
-                  decoration:
-                      const InputDecoration(hintText: "💼 المهنة (اختياري)"),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: notesCtrl,
-                  maxLines: 2,
-                  decoration:
-                      const InputDecoration(hintText: "📝 ملاحظات"),
-                ),
-              ],
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(hintText: "اسم ولي الأمر"),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: relation,
+                    isExpanded: true,
+                    dropdownColor: AppColors.darkNavy,
+                    items: const [
+                      DropdownMenuItem(value: 'أب', child: Text("أب")),
+                      DropdownMenuItem(value: 'أم', child: Text("أم")),
+                      DropdownMenuItem(value: 'أخ', child: Text("أخ")),
+                      DropdownMenuItem(value: 'أخت', child: Text("أخت")),
+                      DropdownMenuItem(value: 'جد', child: Text("جد")),
+                      DropdownMenuItem(value: 'جدة', child: Text("جدة")),
+                      DropdownMenuItem(value: 'عم', child: Text("عم")),
+                      DropdownMenuItem(value: 'خال', child: Text("خال")),
+                      DropdownMenuItem(value: 'وصي', child: Text("وصي")),
+                    ],
+                    onChanged: (v) => setD(() => relation = v!),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: p1Ctrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(hintText: "📞 الرقم الأساسي"),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: p2Ctrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(hintText: "📞 الرقم الاحتياطي"),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: addrCtrl,
+                    decoration: const InputDecoration(hintText: "🏠 العنوان (اختياري)"),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: occCtrl,
+                    decoration: const InputDecoration(hintText: "💼 المهنة (اختياري)"),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: notesCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(hintText: "📝 ملاحظات"),
+                  ),
+
+                  const Divider(color: AppColors.gold, height: 24),
+
+                  // ============ قائمة الأبناء المجمّعة ============
+                  const Text("👥 اختر الأبناء التابعين له:",
+                      style: TextStyle(
+                          color: AppColors.gold,
+                          fontFamily: 'Changa',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13)),
+                  const SizedBox(height: 8),
+
+                  if (studentsByClass.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                          "لا يوجد طلاب مسجلون بعد.\nأضف طلاباً أولاً من شاشة الطلاب.",
+                          style: TextStyle(
+                              color: Colors.white54,
+                              fontFamily: 'Changa',
+                              fontSize: 12),
+                          textAlign: TextAlign.center),
+                    )
+                  else
+                    ...studentsByClass.entries.map((entry) {
+                      final cls = entry.key;
+                      final studentsInClass = entry.value;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Theme(
+                          data: Theme.of(ctx).copyWith(
+                            dividerColor: Colors.transparent,
+                          ),
+                          child: ExpansionTile(
+                            title: Row(
+                              children: [
+                                const Icon(Icons.class_,
+                                    color: AppColors.gold, size: 16),
+                                const SizedBox(width: 6),
+                                Text(cls,
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: 'Changa',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold)),
+                                const Spacer(),
+                                Text("${studentsInClass.length} طالب",
+                                    style: const TextStyle(
+                                        color: Colors.white38,
+                                        fontFamily: 'Changa',
+                                        fontSize: 10)),
+                              ],
+                            ),
+                            children: studentsInClass
+                                .map((st) => CheckboxListTile(
+                                      dense: true,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 10),
+                                      title: Text(st.name,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: 'Changa',
+                                              fontSize: 13)),
+                                      activeColor: AppColors.gold,
+                                      checkColor: AppColors.darkest,
+                                      value: selectedStudents.contains(st.name),
+                                      onChanged: (v) {
+                                        setD(() {
+                                          if (v == true) {
+                                            selectedStudents.add(st.name);
+                                          } else {
+                                            selectedStudents.remove(st.name);
+                                          }
+                                        });
+                                      },
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -254,7 +346,8 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
             TextButton(
               onPressed: () {
                 if (nameCtrl.text.isEmpty) return;
-                final g = Guardian(
+
+                final guardian = Guardian(
                   id: editing?.id ??
                       DateTime.now().millisecondsSinceEpoch.toString(),
                   name: nameCtrl.text.trim(),
@@ -265,13 +358,46 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
                   occupation: occCtrl.text.trim(),
                   notes: notesCtrl.text.trim(),
                 );
+
                 if (editing == null) {
-                  data.addGuardian(g);
+                  data.addGuardian(guardian);
                 } else {
-                  final i = data.guardians.indexWhere(
-                      (x) => x.id == editing.id);
-                  if (i != -1) data.updateGuardian(i, g);
+                  final i = data.guardians
+                      .indexWhere((x) => x.id == editing.id);
+                  if (i != -1) data.updateGuardian(i, guardian);
                 }
+
+                // 🔗 ربط الطلاب المختارين بهذا الوالد
+                for (final student in data.students) {
+                  final shouldLink = selectedStudents.contains(student.name);
+                  final currentlyLinked = student.guardianId == guardian.id;
+
+                  if (shouldLink && !currentlyLinked) {
+                    final idx = data.students.indexOf(student);
+                    data.updateStudent(
+                        idx,
+                        Student(
+                          name: student.name,
+                          classRoom: student.classRoom,
+                          age: student.age,
+                          guardianId: guardian.id,
+                          photoPath: student.photoPath,
+                        ));
+                  } else if (!shouldLink && currentlyLinked) {
+                    // فصل الطالب من هذا الوالد
+                    final idx = data.students.indexOf(student);
+                    data.updateStudent(
+                        idx,
+                        Student(
+                          name: student.name,
+                          classRoom: student.classRoom,
+                          age: student.age,
+                          guardianId: null,
+                          photoPath: student.photoPath,
+                        ));
+                  }
+                }
+
                 Navigator.pop(ctx);
               },
               child: const Text("حفظ",
@@ -376,7 +502,7 @@ class _GuardiansScreenState extends State<GuardiansScreen> {
                     color: AppColors.blue,
                     onTap: () {
                       Navigator.pop(context);
-                      _dialog(context, data, editing: g);
+                      _guardianDialog(context, data, editing: g);
                     },
                   ),
                 ),
