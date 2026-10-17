@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/school_data.dart';
 import '../models/settings.dart';
 import '../models/finance.dart';
+import '../models/defaults.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 
@@ -54,16 +55,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget build(BuildContext context) {
     final data = context.watch<SchoolDataProvider>();
     final settings = context.watch<SettingsProvider>();
+    final defaults = context.watch<DefaultsProvider>();
     final primary = settings.primaryColor;
     final currency = settings.currencySymbol;
 
-    // تعيين الحساب الافتراضي إن لم يُحدد
     _accountId ??= data.defaultAccount.id;
 
     final isEditing = widget.editing != null;
+    // 🆕 قائمة البنود من DefaultsProvider (ديناميكية)
     final categories = _type == TransactionType.receipt
-        ? FinanceCategory.defaultReceipts
-        : FinanceCategory.defaultPayments;
+        ? defaults.receipts
+        : defaults.payments;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,18 +98,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: _typeTab(
-                            "📥 قبض",
-                            TransactionType.receipt,
-                            AppColors.green,
+                        child: _typeTab("📥 قبض",
+                            TransactionType.receipt, AppColors.green,
                             primary),
                       ),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: _typeTab(
-                            "📤 صرف",
-                            TransactionType.payment,
-                            AppColors.red,
+                        child: _typeTab("📤 صرف",
+                            TransactionType.payment, AppColors.red,
                             primary),
                       ),
                     ],
@@ -140,7 +138,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     ],
                   ),
                 ),
-
               const SizedBox(height: 15),
 
               // ============ المبلغ ============
@@ -167,7 +164,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       vertical: 18, horizontal: 12),
                 ),
               ),
-
               const SizedBox(height: 15),
 
               // ============ الحساب ============
@@ -191,10 +187,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     .toList(),
                 onChanged: (v) => setState(() => _accountId = v),
               ),
-
               const SizedBox(height: 15),
 
-              // ============ البند ============
+              // ============ البند (ديناميكي) ============
               _label("📂 البند *", primary),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -203,36 +198,55 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: categories.map((c) {
-                    final name = c['name'] as String;
-                    final icon = c['icon'] as IconData;
-                    final selected = _categoryName == name;
-                    return ChoiceChip(
-                      avatar: Icon(icon,
-                          size: 16,
-                          color: selected
-                              ? AppColors.darkest
-                              : primary),
-                      label: Text(name,
-                          style: TextStyle(
-                              color: selected
-                                  ? AppColors.darkest
-                                  : primary,
-                              fontFamily: 'Changa',
-                              fontSize: 12)),
-                      selected: selected,
-                      selectedColor: primary,
-                      backgroundColor: AppColors.navy,
-                      onSelected: (_) =>
-                          setState(() => _categoryName = name),
-                    );
-                  }).toList(),
-                ),
+                child: categories.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Text(
+                            "⚠️ لا توجد بنود. أضفها من الإعدادات → البيانات الافتراضية.",
+                            style: TextStyle(
+                                color: Colors.orange,
+                                fontFamily: 'Changa',
+                                fontSize: 12)),
+                      )
+                    : Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          ...categories.map((name) {
+                            final selected = _categoryName == name;
+                            return ChoiceChip(
+                              label: Text(name,
+                                  style: TextStyle(
+                                      color: selected
+                                          ? AppColors.darkest
+                                          : primary,
+                                      fontFamily: 'Changa',
+                                      fontSize: 12)),
+                              selected: selected,
+                              selectedColor: primary,
+                              backgroundColor: AppColors.navy,
+                              onSelected: (_) =>
+                                  setState(() => _categoryName = name),
+                            );
+                          }),
+                          // 📝 خيار "مخصص"
+                          ActionChip(
+                            avatar: const Icon(Icons.add,
+                                color: Colors.green, size: 16),
+                            label: const Text("مخصص...",
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontFamily: 'Changa',
+                                    fontSize: 12)),
+                            backgroundColor: Colors.transparent,
+                            side: BorderSide(
+                                color: Colors.green.withOpacity(0.5)),
+                            onPressed: () =>
+                                _addCustomCategory(context, primary),
+                          ),
+                        ],
+                      ),
               ),
-
               const SizedBox(height: 15),
 
               // ============ المستلم/الدافع ============
@@ -248,7 +262,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                         ? "اسم الدافع"
                         : "اسم المستلم"),
               ),
-
               const SizedBox(height: 15),
 
               // ============ التاريخ ============
@@ -275,8 +288,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       Icon(Icons.calendar_today,
                           color: primary, size: 20),
                       const SizedBox(width: 10),
-                      Text(
-                          DateFormat('yyyy/MM/dd').format(_date),
+                      Text(DateFormat('yyyy/MM/dd').format(_date),
                           style: const TextStyle(
                               color: Colors.white,
                               fontFamily: 'Changa',
@@ -287,7 +299,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 15),
 
               // ============ رقم السند ============
@@ -302,7 +313,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       Icon(Icons.numbers, color: primary, size: 18),
                 ),
               ),
-
               const SizedBox(height: 15),
 
               // ============ البيان ============
@@ -313,7 +323,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 decoration:
                     const InputDecoration(hintText: "وصف مختصر"),
               ),
-
               const SizedBox(height: 15),
 
               // ============ ملاحظات ============
@@ -324,7 +333,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 decoration:
                     const InputDecoration(hintText: "ملاحظات إضافية"),
               ),
-
               const SizedBox(height: 25),
 
               // ============ أزرار ============
@@ -404,6 +412,41 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     );
   }
 
+  // ============ إضافة بند مخصص ============
+  void _addCustomCategory(BuildContext context, Color primary) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.darkNavy,
+        title: const Text("بند مخصص",
+            style: TextStyle(
+                color: AppColors.gold, fontFamily: 'Changa')),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: "اسم البند"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("إلغاء"),
+          ),
+          TextButton(
+            onPressed: () {
+              if (ctrl.text.trim().isNotEmpty) {
+                setState(() => _categoryName = ctrl.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("تأكيد",
+                style: TextStyle(color: AppColors.gold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _save(BuildContext context, SchoolDataProvider data) {
     final amount = double.tryParse(_amountCtrl.text);
     if (amount == null || amount <= 0) {
@@ -424,7 +467,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         : _refCtrl.text.trim();
 
     if (widget.editing == null) {
-      // إضافة جديدة
       data.addTransaction(FinanceTransaction(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         accountId: _accountId!,
@@ -440,7 +482,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       ));
       _snack(context, "تم حفظ السند بنجاح", AppColors.green);
     } else {
-      // تعديل
       data.updateTransaction(FinanceTransaction(
         id: widget.editing!.id,
         accountId: _accountId!,
