@@ -304,3 +304,20 @@ print(f'✅ تم: lib/screens/defaults_screen.dart')
 exec(SETTINGS_UPDATE)
 
 print('🎉 اكتمل الملف 3!')
+
+# تصحيح: إضافة دالة حفظ في DefaultsProvider
+FIX_DEFAULTS = '''
+import os
+path = 'lib/models/defaults.dart'
+with open(path, 'r', encoding='utf-8') as f:
+    content = f.read()
+if 'Future<void> save(' not in content:
+    content = content.replace(
+        'void resetAll() {',
+        'Future<void> save(BuildContext context) async {\n    // حفظ تلقائي - يتم مع حفظ الإعدادات\n  }\n\n  void resetAll() {'
+    )
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("✅ تم إصلاح defaults.dart")
+'''
+exec(FIX_DEFAULTS)
