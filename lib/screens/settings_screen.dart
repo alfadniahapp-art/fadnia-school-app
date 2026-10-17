@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../utils/date_formatter.dart';
 import '../widgets/common_widgets.dart';
 import 'welcome_screen.dart';
+import 'defaults_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -98,26 +99,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontSize: 12),
               ),
               const SizedBox(height: 10),
-              _calendarOption(
-                  context,
-                  s,
-                  CalendarType.hijri,
-                  "هجري",
-                  "مثال: 15 ربيع الأول 1446 هـ",
-                  "🌙"),
-              _calendarOption(
-                  context,
-                  s,
-                  CalendarType.gregorian,
-                  "ميلادي",
-                  "مثال: 15/10/2026",
-                  "📅"),
-              _calendarOption(
-                  context,
-                  s,
-                  CalendarType.both,
-                  "الاثنان معاً",
-                  "15 ربيع الأول 1446 هـ  •  15/10/2026",
+              _calendarOption(context, s, CalendarType.hijri,
+                  "هجري", "مثال: 15 ربيع الأول 1446 هـ", "🌙"),
+              _calendarOption(context, s, CalendarType.gregorian,
+                  "ميلادي", "مثال: 15/10/2026", "📅"),
+              _calendarOption(context, s, CalendarType.both,
+                  "الاثنان معاً", "15 ربيع الأول 1446 هـ  •  15/10/2026",
                   "🌍"),
 
               // ============ 💰 العملة ============
@@ -139,8 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _snack(context, "تم تغيير العملة");
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          s.primaryColor.withOpacity(0.15),
+                      backgroundColor: s.primaryColor.withOpacity(0.15),
                       side: BorderSide(color: s.primaryColor, width: 2),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 16),
@@ -238,6 +224,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _moduleSwitch(s, 'reports', 'التقارير'),
               _moduleSwitch(s, 'stats', 'الإحصائيات'),
 
+              // ============ 📋 البيانات الافتراضية ============
+              _section("📋 البيانات الافتراضية", s.primaryColor),
+              SuccessButton(
+                label: "⚙️ إدارة القوائم الافتراضية",
+                icon: Icons.settings_applications,
+                color: s.primaryColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DefaultsScreen()),
+                  );
+                },
+              ),
+
               // ============ 🔒 الأمان ============
               _section("🔒 الأمان", s.primaryColor),
               const CustomLabel("كلمة المرور الجديدة:"),
@@ -325,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 30),
-              const Text("الإصدار 6.2.0",
+              const Text("الإصدار 6.3.0",
                   style: TextStyle(
                       color: Colors.white38,
                       fontFamily: 'Changa',
