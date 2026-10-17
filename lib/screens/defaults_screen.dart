@@ -27,6 +27,7 @@ class DefaultsScreen extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           child: Column(
             children: [
+              // ============ معلومات ============
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -40,7 +41,7 @@ class DefaultsScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        "هنا تتحكم في كل القوائم الافتراضية للتطبيق",
+                        "هنا تتحكم في كل القوائم الافتراضية للتطبيق\nالتغييرات تُحفظ تلقائياً",
                         style: TextStyle(
                             color: Colors.white70,
                             fontFamily: 'Changa',
@@ -51,6 +52,8 @@ class DefaultsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 15),
+
+              // ============ قوائم البيانات ============
               _listSection(context, "📚 المواد السريعة",
                   'quickSubjects', d.quickSubjects, primary, d),
               _listSection(context, "👥 أنواع الموظفين",
@@ -63,13 +66,43 @@ class DefaultsScreen extends StatelessWidget {
                   'receipts', d.receipts, primary, d),
               _listSection(context, "💸 بنود الصرف",
                   'payments', d.payments, primary, d),
+
               const SizedBox(height: 20),
+
+              // ============ زر الحفظ ============
+              SuccessButton(
+                label: "💾 حفظ التغييرات",
+                icon: Icons.save,
+                color: AppColors.green,
+                onTap: () async {
+                  await d.save();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text("تم حفظ البيانات بنجاح ✓",
+                              style: TextStyle(fontFamily: 'Changa')),
+                        ],
+                      ),
+                      backgroundColor: AppColors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+
+              // ============ زر إعادة التعيين ============
               SuccessButton(
                 label: "🔄 إعادة التعيين للافتراضي",
                 icon: Icons.refresh,
                 color: AppColors.orange,
                 onTap: () => _confirmReset(context, d),
               ),
+
               const SizedBox(height: 30),
             ],
           ),
@@ -181,6 +214,14 @@ class DefaultsScreen extends StatelessWidget {
             onPressed: () {
               d.resetAll();
               Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("تمت إعادة التعيين للافتراضي ✓",
+                      style: TextStyle(fontFamily: 'Changa')),
+                  backgroundColor: AppColors.orange,
+                  duration: Duration(seconds: 2),
+                ),
+              );
             },
             child: const Text("تعيين",
                 style: TextStyle(color: Colors.orange)),
