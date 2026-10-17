@@ -30,8 +30,7 @@ class MullaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-            create: (_) => DefaultsProvider()),
+        ChangeNotifierProvider(create: (_) => DefaultsProvider()),
         ChangeNotifierProvider(
             create: (_) => SchoolDataProvider()..loadData()),
         ChangeNotifierProvider(
