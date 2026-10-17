@@ -7,6 +7,7 @@ import 'models/settings.dart';
 import 'models/attendance.dart';
 import 'models/calendar_event.dart';
 import 'models/fees.dart';
+import 'models/defaults.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
@@ -30,6 +31,8 @@ class MullaApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
+            create: (_) => DefaultsProvider()),
+        ChangeNotifierProvider(
             create: (_) => SchoolDataProvider()..loadData()),
         ChangeNotifierProvider(
             create: (_) => SettingsProvider()..load()),
@@ -42,7 +45,6 @@ class MullaApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
-          // 🔄 تحديث الألوان من الإعدادات
           AppTheme.updateColors(
             primary: settings.primaryColor,
             background: settings.backgroundColor,
