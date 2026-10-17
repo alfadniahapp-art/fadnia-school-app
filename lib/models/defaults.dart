@@ -6,7 +6,6 @@ import 'dart:convert';
 //  📦 البيانات الافتراضية القابلة للتعديل
 // ============================================================
 class AppDefaults {
-  // 📚 المواد السريعة
   static const List<String> defaultQuickSubjects = [
     'لغة عربية',
     'لغة عربية - قواعد',
@@ -28,7 +27,6 @@ class AppDefaults {
     'تربية بدنية',
   ];
 
-  // 👥 أنواع الموظفين
   static const List<String> defaultEmployeeTypes = [
     'معلم',
     'عامل',
@@ -39,7 +37,6 @@ class AppDefaults {
     'أخرى',
   ];
 
-  // 🎁 بنود الحوافز
   static const List<String> defaultIncomes = [
     'حافز أداء',
     'حافز تفوق',
@@ -49,7 +46,6 @@ class AppDefaults {
     'مكافأة',
   ];
 
-  // ➖ بنود الخصومات
   static const List<String> defaultDeductions = [
     'غياب',
     'سلفة',
@@ -58,7 +54,6 @@ class AppDefaults {
     'تأمين',
   ];
 
-  // 💰 بنود القبض
   static const List<String> defaultReceipts = [
     'رسوم دراسية',
     'رسوم تسجيل',
@@ -70,7 +65,6 @@ class AppDefaults {
     'أخرى',
   ];
 
-  // 💸 بنود الصرف
   static const List<String> defaultPayments = [
     'رواتب',
     'إيجار',
@@ -99,12 +93,12 @@ class DefaultsProvider extends ChangeNotifier {
   List<String> receipts = [...AppDefaults.defaultReceipts];
   List<String> payments = [...AppDefaults.defaultPayments];
 
-  // 💾 تحميل من التخزين
+  /// 💾 تحميل البيانات المحفوظة
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_storageKey);
-      if (raw != null) {
+      if (raw != null && raw.isNotEmpty) {
         final data = jsonDecode(raw) as Map<String, dynamic>;
         quickSubjects = List<String>.from(
             data['quickSubjects'] ?? AppDefaults.defaultQuickSubjects);
@@ -123,7 +117,7 @@ class DefaultsProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  // 💾 حفظ في التخزين
+  /// 💾 حفظ البيانات
   Future<void> save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -139,7 +133,6 @@ class DefaultsProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  // 🔄 إعادة تعيين
   void resetAll() {
     quickSubjects = [...AppDefaults.defaultQuickSubjects];
     employeeTypes = [...AppDefaults.defaultEmployeeTypes];
@@ -151,7 +144,6 @@ class DefaultsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ➕ إضافة
   void addItem(String listType, String value) {
     if (value.trim().isEmpty) return;
     final list = _listOf(listType);
@@ -162,14 +154,12 @@ class DefaultsProvider extends ChangeNotifier {
     }
   }
 
-  // ❌ حذف
   void removeItem(String listType, String value) {
     _listOf(listType).remove(value);
     save();
     notifyListeners();
   }
 
-  // ✏️ تعديل
   void updateItem(String listType, int index, String newValue) {
     if (newValue.trim().isEmpty) return;
     _listOf(listType)[index] = newValue.trim();
